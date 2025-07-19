@@ -42,7 +42,7 @@ function UploadPage() {
 
   const handleLogout = () => {
     localStorage.removeItem("user"); // or "token" depending on what you stored
-    navigate("/login");
+    navigate("/");
   };
 
   return (

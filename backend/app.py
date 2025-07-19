@@ -117,4 +117,4 @@ def login():
     if row and check_password_hash(row[0], password):
         return jsonify({'message': 'Login successful'}), 200
     else:
-        return jsonify({'error': 'Invalid username or password'}), 401
+        return jsonify({'message': 'Invalid username or password'}), 401
