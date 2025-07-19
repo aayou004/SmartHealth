@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import HealthChart from "./HealthChart";
 
 function UploadPage() {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
   const [parsedData, setParsedData] = useState([]);
@@ -38,9 +40,24 @@ function UploadPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("user"); // or "token" depending on what you stored
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-2xl font-bold mb-6 text-center">Upload Health CSV</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-center flex-grow">
+          Upload Health CSV
+        </h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 ml-4"
+        >
+          Logout
+        </button>
+      </div>
 
       <form
         onSubmit={handleSubmit}
@@ -88,7 +105,9 @@ function UploadPage() {
             <button
               onClick={() => setMetric("steps")}
               className={`px-4 py-2 rounded ${
-                metric === "steps" ? "bg-blue-600 text-white" : "bg-white text-blue-600 border"
+                metric === "steps"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-blue-600 border"
               }`}
             >
               Steps
@@ -96,7 +115,9 @@ function UploadPage() {
             <button
               onClick={() => setMetric("heart_rate")}
               className={`px-4 py-2 rounded ${
-                metric === "heart_rate" ? "bg-blue-600 text-white" : "bg-white text-blue-600 border"
+                metric === "heart_rate"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-blue-600 border"
               }`}
             >
               Heart Rate
