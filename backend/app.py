@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 import csv
 import io
+import sqlite3
 
 app = Flask(__name__)
 CORS(app)
@@ -57,3 +59,62 @@ def upload():
         return jsonify({"data": data, "summary": summary})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+def init_db():
+    conn = sqlite3.connect("health.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Call the function on startup
+init_db()
+
+# Register endpoint
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+
+    conn = sqlite3.connect('health.db')
+    c = conn.cursor()
+
+    c.execute('SELECT * FROM users WHERE username = ?', (username,))
+    if c.fetchone():
+        return jsonify({'error': 'User already exists'}), 409
+
+    hashed_password = generate_password_hash(password)
+    c.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, hashed_password))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'message': 'User registered successfully'}), 201
+
+# Login endpoint
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    conn = sqlite3.connect('health.db')
+    c = conn.cursor()
+    c.execute('SELECT password_hash FROM users WHERE username = ?', (username,))
+    row = c.fetchone()
+    conn.close()
+
+    if row and check_password_hash(row[0], password):
+        return jsonify({'message': 'Login successful'}), 200
+    else:
+        return jsonify({'message': 'Invalid username or password'}), 401
