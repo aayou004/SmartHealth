@@ -23,7 +23,8 @@ body {
   --md-sys-color-on-primary: #1e1f22;
   --md-sys-color-primary: #60a5fa;
   --md-sys-color-outline: #8e9099;
-  
+
+  /* --md-sys-color-surface-container-low: #1f1f1f; */
   --md-sys-color-surface-container-low: #1F2937;
-  --md-sys-color-on-surface-variant: #FFFFFF;
+  --md-sys-color-on-surface-variant: #a7a7a7;
 }
