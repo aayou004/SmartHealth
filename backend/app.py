@@ -49,6 +49,7 @@ def upload():
         summary = {}
         if steps:
             step_values = [s[1] for s in steps]
+            summary["total_steps"] = sum(step_values) # Add this line
             summary["average_steps"] = round(sum(step_values) / len(step_values), 2)
             summary["max_steps_day"] = max(steps, key=lambda x: x[1])[0]
         if heart_rates:
