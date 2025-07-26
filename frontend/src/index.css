@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --md-ref-typeface-brand: 'Inter', sans-serif;
+  --md-ref-typeface-plain: 'Inter', sans-serif;
+  --dracula-background: #282A36;
+  --dracula-current-line: #44475A;
+  --dracula-foreground: #F8F8F2;
+  --dracula-comment: #6272A4;
+  --dracula-purple: #BD93F9;
+  --dracula-pink: #FF79C6;
+}
+
+body {
+  --theme-bg: var(--dracula-foreground);
+  --theme-text: var(--dracula-background);
+  --theme-primary: var(--dracula-comment);
+  --theme-primary-text: var(--dracula-foreground);
+  --theme-secondary: var(--dracula-pink);
+  --theme-card-bg: #ffffff;
+  --theme-outline: #d1d5db;
+  --theme-chart-line: var(--dracula-pink);
+  --theme-chart-grid: #e5e7eb;
+
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+
+  --md-sys-color-primary: var(--theme-primary);
+  --md-sys-color-on-primary: var(--theme-primary-text);
+  --md-sys-color-surface: var(--theme-card-bg);
+  --md-sys-color-on-surface: var(--theme-text);
+  --md-sys-color-outline: var(--theme-outline);
+  --md-sys-color-surface-container-low: var(--theme-card-bg);
+  --md-sys-color-on-surface-variant: var(--dracula-comment);
+}
+
+.dark body {
+  --theme-bg: var(--dracula-background);
+  --theme-text: var(--dracula-foreground);
+  --theme-primary: var(--dracula-purple);
+  --theme-primary-text: var(--dracula-background);
+  --theme-secondary: var(--dracula-pink);
+  --theme-card-bg: var(--dracula-current-line);
+  --theme-outline: var(--dracula-comment);
+  --theme-chart-line: var(--dracula-pink);
+  --theme-chart-grid: var(--dracula-current-line);
+
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+
+  --md-sys-color-primary: var(--theme-primary);
+  --md-sys-color-on-primary: var(--theme-primary-text);
+  --md-sys-color-surface: var(--theme-card-bg);
+  --md-sys-color-on-surface: var(--theme-text);
+  --md-sys-color-outline: var(--theme-outline);
+  --md-sys-color-surface-container-low: var(--theme-card-bg);
+  --md-sys-color-on-surface-variant: var(--dracula-comment);
+}

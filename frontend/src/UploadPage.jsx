@@ -1,6 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import HealthChart from "./HealthChart";
+import { ThemeContext } from "./ThemeContext";
+import "@material/web/button/filled-button.js";
+import "@material/web/button/outlined-button.js";
+import "@material/web/button/text-button.js";
+import "@material/web/icon/icon.js";
+import "@material/web/iconbutton/icon-button.js";
 
 function UploadPage() {
   const navigate = useNavigate();
@@ -9,12 +15,22 @@ function UploadPage() {
   const [parsedData, setParsedData] = useState([]);
   const [summary, setSummary] = useState(null);
   const [metric, setMetric] = useState("steps");
+  const fileInputRef = useRef(null);
+  const { theme, toggleTheme } = useContext(ThemeContext);
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setStatus("");
-    setParsedData([]);
-    setSummary(null);
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setStatus(`Selected file: ${selectedFile.name}`);
+      setParsedData([]);
+      setSummary(null);
+    }
+  };
+
+  const handleFileSelect = () => {
+    fileInputRef.current.click();
   };
 
   const handleSubmit = async (e) => {
@@ -25,6 +41,7 @@ function UploadPage() {
     formData.append("file", file);
 
     try {
+      setStatus("Uploading...");
       const response = await fetch("http://localhost:5000/upload", {
         method: "POST",
         body: formData,
@@ -41,92 +58,120 @@ function UploadPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("user"); // or "token" depending on what you stored
+    localStorage.removeItem("user");
     navigate("/");
+  };
+  
+  const toggleSidebar = () => {
+    setSidebarOpen(!isSidebarOpen);
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-center flex-grow">
-          Upload Health CSV
-        </h1>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 ml-4"
-        >
-          Logout
-        </button>
+    <div className="relative bg-[var(--theme-bg)] min-h-screen transition-colors duration-300">
+      <div className="absolute top-0 left-0 p-4 z-40">
+        <md-icon-button onClick={toggleSidebar}>
+          <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
+        </md-icon-button>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col items-center gap-4 mb-6"
+      <div className="absolute top-0 right-0 p-4 z-40">
+        <md-icon-button onClick={toggleTheme}>
+          <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
+        </md-icon-button>
+      </div>
+
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black opacity-50 z-20"
+          onClick={toggleSidebar}
+        ></div>
+      )}
+
+      <div
+        className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-          className="bg-white p-2 border rounded"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Upload
-        </button>
-        {status && <p className="text-sm text-gray-700">{status}</p>}
-      </form>
-
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-bold text-gray-700">Average Steps</h3>
-            <p className="text-2xl">{summary.average_steps ?? "N/A"}</p>
-          </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-bold text-gray-700">Average Heart Rate</h3>
-            <p className="text-2xl">{summary.average_heart_rate ?? "N/A"}</p>
-          </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-bold text-gray-700">Max Steps Day</h3>
-            <p className="text-lg">{summary.max_steps_day ?? "N/A"}</p>
-          </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-bold text-gray-700">Max Heart Rate Day</h3>
-            <p className="text-lg">{summary.max_heart_rate_day ?? "N/A"}</p>
-          </div>
+        <div className="p-6 flex flex-col h-full">
+            <div className="mt-16 mb-8">
+                <h1 className="text-2xl font-bold text-[var(--theme-primary)]">
+                  SmartHealth
+                </h1>
+            </div>
+          <nav className="flex flex-col gap-4 mt-auto">
+            <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={handleLogout}>
+                <md-icon>logout</md-icon>
+                <span className="text-[var(--theme-text)]">Log Out</span>
+            </div>
+          </nav>
         </div>
-      )}
-
-      {parsedData.length > 0 && (
-        <>
-          <div className="mb-6 flex justify-center gap-4">
-            <button
-              onClick={() => setMetric("steps")}
-              className={`px-4 py-2 rounded ${
-                metric === "steps"
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-blue-600 border"
-              }`}
+      </div>
+      
+      <div className="relative z-10">
+        <main className="container mx-auto p-6 pt-20">
+            <div className="bg-[var(--theme-card-bg)] p-8 rounded-xl border border-[var(--theme-outline)] mb-8">
+            <h2 className="text-2xl font-semibold mb-4 text-center text-[var(--theme-text)]">
+                Upload Your Health Data
+            </h2>
+            <form
+                onSubmit={handleSubmit}
+                className="flex flex-col items-center gap-4"
             >
-              Steps
-            </button>
-            <button
-              onClick={() => setMetric("heart_rate")}
-              className={`px-4 py-2 rounded ${
-                metric === "heart_rate"
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-blue-600 border"
-              }`}
-            >
-              Heart Rate
-            </button>
-          </div>
+                <input
+                type="file"
+                onChange={handleFileChange}
+                className="hidden"
+                ref={fileInputRef}
+                accept=".csv"
+                />
+                <md-outlined-button onClick={handleFileSelect}>
+                Select CSV File
+                </md-outlined-button>
+                <md-filled-button type="submit" disabled={!file}>
+                Upload and Analyze
+                </md-filled-button>
+            </form>
+            {status && (
+                <p className="mt-4 text-center text-[var(--theme-text)] opacity-80">
+                {status}
+                </p>
+            )}
+            </div>
 
-          <HealthChart data={parsedData} metric={metric} />
-        </>
-      )}
+            {summary && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                <h3 className="font-bold mb-2">Total Steps</h3>
+                <p className="text-2xl font-semibold text-[var(--theme-primary)]">
+                    {summary.total_steps ?? "N/A"}
+                </p>
+                </div>
+                <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                <h3 className="font-bold mb-2">Avg. Heart Rate</h3>
+                <p className="text-2xl font-semibold text-[var(--theme-primary)]">
+                    {summary.average_heart_rate ?? "N/A"}
+                </p>
+                </div>
+                <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                <h3 className="font-bold mb-2">Max Steps Day</h3>
+                <p className="text-lg text-[var(--theme-primary)]">
+                    {summary.max_steps_day ?? "N/A"}
+                </p>
+                </div>
+                <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                <h3 className="font-bold mb-2">Max Heart Rate Day</h3>
+                <p className="text-lg text-[var(--theme-primary)]">
+                    {summary.max_heart_rate_day ?? "N/A"}
+                </p>
+                </div>
+            </div>
+            )}
+
+            {parsedData.length > 0 && (
+              <HealthChart data={parsedData} metric={metric} />
+            )}
+        </main>
+      </div>
     </div>
   );
 }
