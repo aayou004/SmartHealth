@@ -1,65 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-import csv
-import io
 import sqlite3
+from datetime import date
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/upload", methods=["POST"])
-def upload():
-    if "file" not in request.files:
-        return jsonify({"error": "No file part"}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
-
-    try:
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-        reader = csv.DictReader(stream)
-        data = list(reader)
-
-        # Try to parse numbers safely
-        for row in data:
-            for key in row:
-                try:
-                    row[key] = float(row[key])
-                except ValueError:
-                    pass  # leave as-is if not a number
-
-        # Extract date, steps, and heart_rate columns if they exist
-        steps = []
-        heart_rates = []
-        for row in data:
-            if "steps" in row:
-                try:
-                    steps.append((row["date"], float(row["steps"])))
-                except:
-                    pass
-            if "heart_rate" in row:
-                try:
-                    heart_rates.append((row["date"], float(row["heart_rate"])))
-                except:
-                    pass
-
-        # Compute stats
-        summary = {}
-        if steps:
-            step_values = [s[1] for s in steps]
-            summary["average_steps"] = round(sum(step_values) / len(step_values), 2)
-            summary["max_steps_day"] = max(steps, key=lambda x: x[1])[0]
-        if heart_rates:
-            hr_values = [hr[1] for hr in heart_rates]
-            summary["average_heart_rate"] = round(sum(hr_values) / len(hr_values), 2)
-            summary["max_heart_rate_day"] = max(heart_rates, key=lambda x: x[1])[0]
-
-        return jsonify({"data": data, "summary": summary})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
 def init_db():
     conn = sqlite3.connect("health.db")
     cursor = conn.cursor()
@@ -70,13 +17,37 @@ def init_db():
             password_hash TEXT NOT NULL
         )
     """)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS health_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            steps INTEGER,
+            sleep_hours REAL,
+            water_glasses INTEGER,
+            mood INTEGER,
+            calorie_intake INTEGER,
+            protein REAL,
+            carbs REAL,
+            fat REAL,
+            active_minutes INTEGER,
+            workout_type TEXT,
+            workout_intensity INTEGER,
+            stress_level INTEGER,
+            journal_entry TEXT,
+            mindful_minutes INTEGER,
+            heart_rate INTEGER,
+            weight REAL,
+            symptoms TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            UNIQUE(user_id, date)
+        )
+    ''')
     conn.commit()
     conn.close()
 
-# Call the function on startup
 init_db()
 
-# Register endpoint
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
@@ -91,6 +62,7 @@ def register():
 
     c.execute('SELECT * FROM users WHERE username = ?', (username,))
     if c.fetchone():
+        conn.close()
         return jsonify({'error': 'User already exists'}), 409
 
     hashed_password = generate_password_hash(password)
@@ -100,7 +72,6 @@ def register():
 
     return jsonify({'message': 'User registered successfully'}), 201
 
-# Login endpoint
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -109,11 +80,72 @@ def login():
 
     conn = sqlite3.connect('health.db')
     c = conn.cursor()
-    c.execute('SELECT password_hash FROM users WHERE username = ?', (username,))
+    c.execute('SELECT id, password_hash FROM users WHERE username = ?', (username,))
     row = c.fetchone()
-    conn.close()
 
-    if row and check_password_hash(row[0], password):
-        return jsonify({'message': 'Login successful'}), 200
+    if row and check_password_hash(row[1], password):
+        user_id = row[0]
+        conn.close()
+        return jsonify({'message': 'Login successful', 'user_id': user_id}), 200
     else:
+        conn.close()
         return jsonify({'message': 'Invalid username or password'}), 401
+
+@app.route('/api/log', methods=['POST'])
+def log_health_data():
+    data = request.json
+    user_id = data.get('user_id')
+    log_date = data.get('date', date.today().isoformat())
+    
+    fields = [
+        'steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake',
+        'protein', 'carbs', 'fat', 'active_minutes', 'workout_type',
+        'workout_intensity', 'stress_level', 'journal_entry',
+        'mindful_minutes', 'heart_rate', 'weight', 'symptoms'
+    ]
+    
+    log_data = {field: data.get(field) for field in fields}
+    log_data['user_id'] = user_id
+    log_data['date'] = log_date
+
+    if not user_id:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    conn = sqlite3.connect('health.db')
+    c = conn.cursor()
+
+    try:
+        columns = ', '.join(log_data.keys())
+        placeholders = ', '.join(['?'] * len(log_data))
+        update_setters = ', '.join([f'{key}=excluded.{key}' for key in fields])
+
+        sql = f'''
+            INSERT INTO health_data ({columns})
+            VALUES ({placeholders})
+            ON CONFLICT(user_id, date) DO UPDATE SET
+            {update_setters}
+        '''
+        
+        c.execute(sql, list(log_data.values()))
+        conn.commit()
+        return jsonify({"message": "Data logged successfully"}), 201
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/logs/<int:user_id>', methods=['GET'])
+def get_health_logs(user_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    try:
+        c.execute("SELECT * FROM health_data WHERE user_id = ? ORDER BY date ASC", (user_id,))
+        rows = c.fetchall()
+        logs = [dict(row) for row in rows]
+        return jsonify(logs)
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()

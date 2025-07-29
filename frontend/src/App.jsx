@@ -1,20 +1,19 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import WelcomePage from "./WelcomePage";
-import LoginPage from "./LoginPage";
-import RegisterPage from "./RegisterPage";
-import UploadPage from "./UploadPage";
+import AuthPage from "./AuthPage";
+import Dashboard from "./Dashboard";
 import LogoutPage from "./LogoutPage";
+import Calendar from "./Calendar";
+import DateForm from "./DateForm";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<WelcomePage />} />
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/upload" element={<UploadPage />} />
+        <Route path="/" element={<AuthPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar/:date" element={<DateForm />} />
+        <Route path="/calendar" element={<Calendar />} />
         <Route path="/logout" element={<LogoutPage />} />
       </Routes>
     </Router>

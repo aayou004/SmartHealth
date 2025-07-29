@@ -1,4 +1,4 @@
-date,heart_rate,blood_pressure,glucose,steps,sleep_hours
+date,heart_rate,blood_pressure,glucose,steps,sleephours
 2023-10-01,72,120/80,90,5432,7.5
 2023-10-02,68,118/78,95,6123,7.0
 2023-10-03,75,122/82,88,7890,6.5
