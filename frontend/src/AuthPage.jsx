@@ -30,9 +30,8 @@ const AuthPage = () => {
         setUsername("");
         setPassword("");
       } else {
-        setMessage(res.data.message);
-        localStorage.setItem("user", JSON.stringify({ username }));
-        navigate("/upload");
+        localStorage.setItem("user", JSON.stringify({ username, user_id: res.data.user_id }));
+        navigate("/dashboard");
       }
     } catch (error) {
       setMessage(error.response?.data?.message || `${mode} failed`);
@@ -46,79 +45,79 @@ const AuthPage = () => {
     setMode(newMode);
   };
 
-  return (
-    <div className="relative min-h-screen flex justify-center items-center bg-[var(--theme-bg)] transition-colors duration-300 p-4">
-        <div className="absolute top-0 right-0 p-4">
-            <md-icon-button onClick={toggleTheme}>
-                <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
-            </md-icon-button>
-        </div>
-      <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-4xl">
-        <div className="text-center">
-          <h1 className="text-6xl font-bold text-[var(--theme-text)]">
-            SmartHealth
-          </h1>
-          <p className="mt-2 text-lg text-[var(--theme-text)] opacity-75">
-            Your Personalized Wellness Companion.
-          </p>
-        </div>
+    return (
+        <div className="relative min-h-screen flex justify-center items-center bg-[var(--theme-bg)] transition-colors duration-300 p-4">
+            <div className="absolute top-0 right-0 p-4">
+                <md-icon-button onClick={toggleTheme}>
+                    <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
+                </md-icon-button>
+            </div>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-4xl">
+                <div className="text-center">
+                    <h1 className="text-6xl font-bold text-[var(--theme-text)]">
+                        SmartHealth
+                    </h1>
+                    <p className="mt-2 text-lg text-[var(--theme-text)] opacity-75">
+                        Your Personalized Wellness Companion.
+                    </p>
+                </div>
 
-        <div className="w-full max-w-sm p-8 bg-[var(--theme-card-bg)] shadow-xl rounded-2xl border border-[var(--theme-outline)]">
-          <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">
-            {mode === "login" ? "Login" : "Register"}
-          </h2>
-          <form onSubmit={handleAuthAction} className="space-y-6">
-            <md-outlined-text-field
-              label="Username"
-              class="w-full"
-              value={username}
-              onInput={(e) => setUsername(e.target.value)}
-              required
-            ></md-outlined-text-field>
-            <md-outlined-text-field
-              label="Password"
-              type="password"
-              class="w-full"
-              value={password}
-              onInput={(e) => setPassword(e.target.value)}
-              required
-            ></md-outlined-text-field>
-            <md-filled-button type="submit" class="w-full">
-              {mode === "login" ? "Login" : "Register"}
-            </md-filled-button>
-          </form>
+                <div className="w-full max-w-sm p-8 bg-[var(--theme-card-bg)] shadow-xl rounded-2xl border border-[var(--theme-outline)]">
+                    <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">
+                        {mode === "login" ? "Login" : "Register"}
+                    </h2>
+                    <form onSubmit={handleAuthAction} className="space-y-6">
+                        <md-outlined-text-field
+                            label="Username"
+                            class="w-full"
+                            value={username}
+                            onInput={(e) => setUsername(e.target.value)}
+                            required
+                        ></md-outlined-text-field>
+                        <md-outlined-text-field
+                            label="Password"
+                            type="password"
+                            class="w-full"
+                            value={password}
+                            onInput={(e) => setPassword(e.target.value)}
+                            required
+                        ></md-outlined-text-field>
+                        <md-filled-button type="submit" class="w-full">
+                            {mode === "login" ? "Login" : "Register"}
+                        </md-filled-button>
+                    </form>
 
-          {mode === "login" ? (
-            <p className="mt-6 text-center text-sm text-[var(--theme-text)] opacity-80">
-              Don't have an account?{" "}
-              <button
-                onClick={() => switchMode("register")}
-                className="font-semibold text-[var(--theme-primary)] hover:underline"
-              >
-                Register
-              </button>
-            </p>
-          ) : (
-            <p className="mt-6 text-center text-sm text-[var(--theme-text)] opacity-80">
-              Already have an account?{" "}
-              <button
-                onClick={() => switchMode("login")}
-                className="font-semibold text-[var(--theme-primary)] hover:underline"
-              >
-                Log In
-              </button>
-            </p>
-          )}
+                    {mode === "login" ? (
+                        <p className="mt-6 text-center text-sm text-[var(--theme-text)] opacity-80">
+                            Don't have an account?{" "}
+                            <button
+                                onClick={() => switchMode("register")}
+                                className="font-semibold text-[var(--theme-primary)] hover:underline"
+                            >
+                                Register
+                            </button>
+                        </p>
+                    ) : (
+                        <p className="mt-6 text-center text-sm text-[var(--theme-text)] opacity-80">
+                            Already have an account?{" "}
+                            <button
+                                onClick={() => switchMode("login")}
+                                className="font-semibold text-[var(--theme-primary)] hover:underline"
+                            >
+                                Log In
+                            </button>
+                        </p>
+                    )}
 
-          {message && (
-            <p className="mt-4 text-center text-sm text-red-500 opacity-90">
-              {message}
-            </p>
-          )}
+                    {message && (
+                        <p className="mt-4 text-center text-sm text-red-500 opacity-90">
+                            {message}
+                        </p>
+                    )}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default AuthPage;

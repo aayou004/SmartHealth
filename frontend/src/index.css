@@ -33,7 +33,10 @@ body {
   --md-sys-color-on-surface: var(--theme-text);
   --md-sys-color-outline: var(--theme-outline);
   --md-sys-color-surface-container-low: var(--theme-card-bg);
+  --md-sys-color-surface-container: var(--theme-card-bg);
   --md-sys-color-on-surface-variant: var(--dracula-comment);
+  --md-sys-color-secondary-container: #e8def8;
+  --md-sys-color-on-secondary-container: #1d192b;
 }
 
 .dark body {
@@ -56,5 +59,8 @@ body {
   --md-sys-color-on-surface: var(--theme-text);
   --md-sys-color-outline: var(--theme-outline);
   --md-sys-color-surface-container-low: var(--theme-card-bg);
+  --md-sys-color-surface-container: var(--theme-card-bg);
   --md-sys-color-on-surface-variant: var(--dracula-comment);
+  --md-sys-color-secondary-container: var(--dracula-background);
+  --md-sys-color-on-secondary-container: var(--dracula-purple);
 }
