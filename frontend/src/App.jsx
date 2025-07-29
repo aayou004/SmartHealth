@@ -4,6 +4,7 @@ import AuthPage from "./AuthPage";
 import Dashboard from "./Dashboard";
 import LogoutPage from "./LogoutPage";
 import Calendar from "./Calendar";
+import DateForm from "./DateForm";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AuthPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar/:date" element={<DateForm />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/logout" element={<LogoutPage />} />
       </Routes>

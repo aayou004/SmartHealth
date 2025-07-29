@@ -26,6 +26,19 @@ def init_db():
             sleep_hours REAL,
             water_glasses INTEGER,
             mood INTEGER,
+            calorie_intake INTEGER,
+            protein REAL,
+            carbs REAL,
+            fat REAL,
+            active_minutes INTEGER,
+            workout_type TEXT,
+            workout_intensity INTEGER,
+            stress_level INTEGER,
+            journal_entry TEXT,
+            mindful_minutes INTEGER,
+            heart_rate INTEGER,
+            weight REAL,
+            symptoms TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id),
             UNIQUE(user_id, date)
         )
@@ -83,10 +96,17 @@ def log_health_data():
     data = request.json
     user_id = data.get('user_id')
     log_date = data.get('date', date.today().isoformat())
-    steps = data.get('steps')
-    sleep_hours = data.get('sleep_hours')
-    water_glasses = data.get('water_glasses')
-    mood = data.get('mood')
+    
+    fields = [
+        'steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake',
+        'protein', 'carbs', 'fat', 'active_minutes', 'workout_type',
+        'workout_intensity', 'stress_level', 'journal_entry',
+        'mindful_minutes', 'heart_rate', 'weight', 'symptoms'
+    ]
+    
+    log_data = {field: data.get(field) for field in fields}
+    log_data['user_id'] = user_id
+    log_data['date'] = log_date
 
     if not user_id:
         return jsonify({"error": "User not authenticated"}), 401
@@ -95,15 +115,18 @@ def log_health_data():
     c = conn.cursor()
 
     try:
-        c.execute('''
-            INSERT INTO health_data (user_id, date, steps, sleep_hours, water_glasses, mood)
-            VALUES (?, ?, ?, ?, ?, ?)
+        columns = ', '.join(log_data.keys())
+        placeholders = ', '.join(['?'] * len(log_data))
+        update_setters = ', '.join([f'{key}=excluded.{key}' for key in fields])
+
+        sql = f'''
+            INSERT INTO health_data ({columns})
+            VALUES ({placeholders})
             ON CONFLICT(user_id, date) DO UPDATE SET
-            steps=excluded.steps,
-            sleep_hours=excluded.sleep_hours,
-            water_glasses=excluded.water_glasses,
-            mood=excluded.mood
-        ''', (user_id, log_date, steps, sleep_hours, water_glasses, mood))
+            {update_setters}
+        '''
+        
+        c.execute(sql, list(log_data.values()))
         conn.commit()
         return jsonify({"message": "Data logged successfully"}), 201
     except sqlite3.Error as e:
