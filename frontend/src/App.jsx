@@ -5,6 +5,7 @@ import Dashboard from "./Dashboard";
 import LogoutPage from "./LogoutPage";
 import Calendar from "./Calendar";
 import DateForm from "./DateForm";
+import UserProfile from "./UserProfile";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/calendar/:date" element={<DateForm />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/profile" element={<UserProfile />} />
         <Route path="/logout" element={<LogoutPage />} />
       </Routes>
     </Router>

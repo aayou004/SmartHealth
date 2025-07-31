@@ -1,11 +1,26 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import sqlite3
 from datetime import date
+import io
+import csv
 
 app = Flask(__name__)
 CORS(app)
+
+UPLOAD_FOLDER = 'uploads'
+PROFILE_PIC_FOLDER = os.path.join(UPLOAD_FOLDER, 'profile_pictures')
+app.config['UPLOAD_FOLDER'] = PROFILE_PIC_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def init_db():
     conn = sqlite3.connect("health.db")
@@ -14,7 +29,20 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL
+            password_hash TEXT NOT NULL,
+            name TEXT,
+            profile_picture TEXT,
+            gender TEXT,
+            pronouns TEXT,
+            dob TEXT,
+            height REAL,
+            weight REAL,
+            blood_type TEXT,
+            primary_goals TEXT,
+            dietary_preferences TEXT,
+            medical_conditions TEXT,
+            allergies TEXT,
+            workout_preferences TEXT
         )
     """)
     cursor.execute('''
@@ -115,9 +143,14 @@ def log_health_data():
     c = conn.cursor()
 
     try:
-        columns = ', '.join(log_data.keys())
-        placeholders = ', '.join(['?'] * len(log_data))
-        update_setters = ', '.join([f'{key}=excluded.{key}' for key in fields])
+        keys = [key for key, value in log_data.items() if value is not None]
+        values = [value for value in log_data.values() if value is not None]
+        
+        columns = ', '.join(keys)
+        placeholders = ', '.join(['?'] * len(values))
+        
+        update_fields = [key for key in fields if key in log_data and log_data[key] is not None]
+        update_setters = ', '.join([f'{key}=excluded.{key}' for key in update_fields])
 
         sql = f'''
             INSERT INTO health_data ({columns})
@@ -126,7 +159,7 @@ def log_health_data():
             {update_setters}
         '''
         
-        c.execute(sql, list(log_data.values()))
+        c.execute(sql, values)
         conn.commit()
         return jsonify({"message": "Data logged successfully"}), 201
     except sqlite3.Error as e:
@@ -149,3 +182,112 @@ def get_health_logs(user_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/profile/<int:user_id>', methods=['GET', 'POST'])
+def user_profile(user_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    if request.method == 'GET':
+        try:
+            c.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            row = c.fetchone()
+            if row:
+                return jsonify(dict(row))
+            return jsonify({"error": "User not found"}), 404
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        file = request.files.get('profile_picture_file')
+        remove_picture = request.form.get('remove_profile_picture') == 'true'
+
+        fields = [
+            'name', 'gender', 'pronouns', 'dob', 'height', 'weight', 'blood_type',
+            'primary_goals', 'dietary_preferences', 'medical_conditions',
+            'allergies', 'workout_preferences'
+        ]
+        
+        update_data = {field: data.get(field) for field in fields if field in data}
+
+        c.execute("SELECT profile_picture FROM users WHERE id = ?", (user_id,))
+        current_picture_row = c.fetchone()
+        current_picture_path = current_picture_row[0] if current_picture_row else None
+
+        if file and allowed_file(file.filename):
+            if current_picture_path and os.path.exists(current_picture_path):
+                os.remove(current_picture_path)
+            
+            _, f_ext = os.path.splitext(file.filename)
+            filename = secure_filename(f"{user_id}_{date.today().isoformat()}{f_ext}")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            update_data['profile_picture'] = os.path.join('uploads/profile_pictures', filename).replace("\\", "/")
+        elif remove_picture:
+            if current_picture_path and os.path.exists(current_picture_path):
+                os.remove(current_picture_path)
+            update_data['profile_picture'] = None
+
+        if not update_data:
+            conn.close()
+            return jsonify({"error": "No data provided to update"}), 400
+
+        set_clause = ', '.join([f'{key} = ?' for key in update_data.keys()])
+        values = list(update_data.values())
+        values.append(user_id)
+
+        try:
+            c.execute(f"UPDATE users SET {set_clause} WHERE id = ?", values)
+            conn.commit()
+            c.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            updated_profile = c.fetchone()
+            return jsonify({"message": "Profile updated successfully", "profile": dict(updated_profile)}), 200
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+@app.route('/uploads/profile_pictures/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/api/export/<int:user_id>', methods=['GET'])
+def export_csv(user_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    try:
+        c.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        user_data = c.fetchone()
+
+        if not user_data:
+            return jsonify({"error": "No data to export"}), 404
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        headers = [key for key in user_data.keys() if key not in ('id', 'password_hash', 'profile_picture')]
+        writer.writerow(headers)
+        
+        writer.writerow([user_data[key] for key in headers])
+            
+        output.seek(0)
+        
+        return Response(
+            output,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment;filename=user_profile_{user_id}.csv"}
+        )
+
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+if __name__ == '__main__':
+    app.run(debug=True)

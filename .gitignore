@@ -28,3 +28,4 @@ yarn-error.log*
 /backend/health_data/*.pyc
 
 /backend/health.db
+/backend/uploads
