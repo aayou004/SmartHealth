@@ -11,7 +11,7 @@ import "@material/web/textfield/outlined-text-field.js";
 const AccordionCategory = ({ title, children, initialOpen = false }) => {
     const [isOpen, setIsOpen] = useState(initialOpen);
     return (
-        <div className="border-b border-[var(--theme-outline)]">
+        <div>
             <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center py-4 text-left">
                 <span className="text-xl font-semibold text-[var(--theme-text)]">{title}</span>
                 <md-icon>{isOpen ? 'expand_less' : 'expand_more'}</md-icon>
@@ -22,7 +22,7 @@ const AccordionCategory = ({ title, children, initialOpen = false }) => {
 };
 
 const FormField = ({ label, description, children }) => (
-    <div className="flex items-center justify-between py-3 border-t border-[var(--theme-outline)] gap-4 first:border-t-0">
+    <div className="flex items-center justify-between py-3 gap-4">
         <div className="w-1/2">
             <label className="font-semibold text-[var(--theme-text)]">{label}</label>
             <p className="text-xs text-[var(--theme-text)] opacity-70 mt-1">{description}</p>
@@ -157,6 +157,10 @@ const DateForm = () => {
                             <md-icon>calendar_month</md-icon>
                             <span className="text-[var(--theme-text)]">Calendar</span>
                         </div>
+                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
+                            <md-icon>person</md-icon>
+                            <span className="text-[var(--theme-text)]">Profile</span>
+                        </div>
                     </nav>
                     <nav className="flex flex-col gap-4 mt-auto">
                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={handleLogout}>
@@ -168,7 +172,7 @@ const DateForm = () => {
             </div>
 
             <main className="container mx-auto p-6 pt-24">
-                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] w-full max-w-2xl mx-auto">
+                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)]">
                     <h2 className="text-3xl font-bold mb-1 text-center text-[var(--theme-text)]">
                         Daily Log
                     </h2>
@@ -187,16 +191,16 @@ const DateForm = () => {
                         ></md-outlined-text-field>
                         
                         <AccordionCategory title="Physical Activity">
-                            <FormField label="Steps" description="Enter the total number of steps you took today.">
+                            <FormField label="Steps" description="Enter the total number of steps taken.">
                                  <md-outlined-text-field class="w-full max-w-xs" id="steps" type="number" value={logData.steps || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Active Minutes" description="Log how many minutes you were physically active.">
+                            <FormField label="Active Minutes" description="Enter the total minutes of physical activity.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="active_minutes" type="number" value={logData.active_minutes || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Workout Type" description="Specify the type of workout you did, e.g., 'Running'.">
+                            <FormField label="Workout Type" description="Specify the type of workout (e.g., Running).">
                                 <md-outlined-text-field class="w-full max-w-xs" id="workout_type" value={logData.workout_type || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Workout Intensity" description="Rate the intensity of your workout from 1 to 5.">
+                            <FormField label="Workout Intensity" description="Rate workout intensity on a scale of 1 to 5.">
                                 <div className="flex gap-2">
                                     {[1, 2, 3, 4, 5].map(val => (
                                          <md-icon-button key={val} type="button" onClick={() => handleRatingChange('workout_intensity', val)} className={`${(logData.workout_intensity || 0) < val ? 'opacity-40' : ''}`}>
@@ -208,19 +212,19 @@ const DateForm = () => {
                         </AccordionCategory>
 
                         <AccordionCategory title="Nutrition & Hydration">
-                            <FormField label="Calories Consumed" description="Enter your total calorie intake for the day.">
+                            <FormField label="Calories Consumed" description="Enter the total calorie intake for the day.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="calorie_intake" type="number" value={logData.calorie_intake || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Glasses of Water" description="Record how many glasses of water you drank.">
+                            <FormField label="Glasses of Water" description="Enter the number of water glasses consumed.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="water_glasses" type="number" value={logData.water_glasses || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Protein (g)" description="Log your total protein intake in grams.">
+                            <FormField label="Protein (g)" description="Enter the total protein intake in grams.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="protein" type="number" value={logData.protein || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Carbs (g)" description="Log your total carbohydrate intake in grams.">
+                            <FormField label="Carbs (g)" description="Enter the total carbohydrate intake in grams.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="carbs" type="number" value={logData.carbs || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Fat (g)" description="Log your total fat intake in grams.">
+                            <FormField label="Fat (g)" description="Enter the total fat intake in grams.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="fat" type="number" value={logData.fat || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
                         </AccordionCategory>
@@ -244,19 +248,19 @@ const DateForm = () => {
                                      ))}
                                  </div>
                             </FormField>
-                            <FormField label="Mindful Minutes" description="Enter the number of minutes you spent being mindful.">
+                            <FormField label="Mindful Minutes" description="Enter the total minutes of mindfulness.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="mindful_minutes" type="number" value={logData.mindful_minutes || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Hours of Sleep" description="Enter the total hours you slept.">
+                            <FormField label="Hours of Sleep" description="Enter the total hours of sleep.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="sleep_hours" type="number" step="0.1" value={logData.sleep_hours || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Weight" description="Record your current weight.">
+                            <FormField label="Weight" description="Enter your current weight.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="weight" type="number" step="0.1" value={logData.weight || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
                             <FormField label="Resting Heart Rate" description="Enter your resting heart rate in BPM.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="heart_rate" type="number" value={logData.heart_rate || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
-                            <FormField label="Symptoms" description="Note any symptoms you experienced today.">
+                            <FormField label="Symptoms" description="List any symptoms experienced today.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="symptoms" value={logData.symptoms || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
                         </AccordionCategory>

@@ -93,6 +93,10 @@ const Dashboard = () => {
                             <md-icon>calendar_month</md-icon>
                             <span className="text-[var(--theme-text)]">Calendar</span>
                         </div>
+                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
+                            <md-icon>person</md-icon>
+                            <span className="text-[var(--theme-text)]">Profile</span>
+                        </div>
                     </nav>
                     <nav className="flex flex-col gap-4 mt-auto">
                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={handleLogout}>
