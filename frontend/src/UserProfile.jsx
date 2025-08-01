@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import BackgroundSettings from "./BackgroundSettings.jsx"; // Import the new component
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/textfield/outlined-text-field.js";
@@ -37,7 +38,8 @@ const TextAreaFormField = ({ label, description, children }) => (
 
 const UserProfile = () => {
     const navigate = useNavigate();
-    const { theme, toggleTheme } = useContext(ThemeContext);
+    // Destructure `mode` and `theme` from the context
+    const { mode, theme } = useContext(ThemeContext);
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [profile, setProfile] = useState({});
     const [message, setMessage] = useState("");
@@ -145,8 +147,11 @@ const UserProfile = () => {
 
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
+    // Conditional class for the background
+    const profileBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
+
     return (
-        <div className="relative bg-[var(--theme-bg)] min-h-screen transition-colors duration-300">
+        <div className={`relative ${profileBgClass} min-h-screen transition-colors duration-300`}>
             <div className="absolute top-0 left-0 p-4 z-40">
                 <md-icon-button onClick={toggleSidebar}>
                     <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
@@ -155,9 +160,7 @@ const UserProfile = () => {
             <div className="absolute top-0 right-0 p-4 z-40 flex items-center gap-2">
                 <md-outlined-button type="button" onClick={handleExport}>Export to CSV</md-outlined-button>
                 <md-filled-button type="button" onClick={handleProfileUpdate}>Save Changes</md-filled-button>
-                <md-icon-button onClick={toggleTheme}>
-                    <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
-                </md-icon-button>
+                {/* Removed the theme toggle button from here */}
             </div>
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
             <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -192,6 +195,9 @@ const UserProfile = () => {
                 <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)]">
                     <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">User Profile</h2>
                     
+                    {/* The BackgroundSettings component is placed here, as requested */}
+                    <BackgroundSettings />
+
                     <div className="flex justify-center mb-6">
                         <div className="relative">
                             <div className="w-48 h-48 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">

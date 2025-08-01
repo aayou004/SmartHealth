@@ -13,7 +13,8 @@ import "@material/web/textfield/outlined-text-field.js";
 const Calendar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { theme, toggleTheme } = useContext(ThemeContext);
+    // Destructure `mode` from the context to check the current mode
+    const { mode, theme } = useContext(ThemeContext);
 
     const [logs, setLogs] = useState([]);
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -90,7 +91,7 @@ const Calendar = () => {
             <div key={dateStr}
                 onClick={() => !isFutureDate && handleDateClick(dateStr)}
                 className={`aspect-square rounded-lg flex items-start justify-start p-1.5 transition-all
-               ${isFutureDate
+                ${isFutureDate
                     ? 'bg-black/10 dark:bg-white/10 opacity-50 cursor-not-allowed'
                     : entryForDay
                         ? 'bg-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-opacity-80 cursor-pointer'
@@ -176,19 +177,17 @@ const Calendar = () => {
         return `${currentYear}`;
     }
 
+    // Conditional class for the background
+    const calendarBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
 
     return (
-        <div className="relative bg-[var(--theme-bg)] min-h-screen transition-colors duration-300">
+        <div className={`relative ${calendarBgClass} min-h-screen transition-colors duration-300`}>
             <div className="absolute top-0 left-0 p-4 z-40">
                 <md-icon-button onClick={toggleSidebar}>
                     <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
                 </md-icon-button>
             </div>
-            <div className="absolute top-0 right-0 p-4 z-40">
-                <md-icon-button onClick={toggleTheme}>
-                    <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
-                </md-icon-button>
-            </div>
+            {/* The theme toggle button has been removed from here */}
 
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
             <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -196,7 +195,7 @@ const Calendar = () => {
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
                     </div>
-                     <nav className="flex flex-col gap-4">
+                    <nav className="flex flex-col gap-4">
                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/dashboard')}>
                             <md-icon>dashboard</md-icon>
                             <span className="text-[var(--theme-text)]">Dashboard</span>
@@ -205,7 +204,7 @@ const Calendar = () => {
                             <md-icon>calendar_month</md-icon>
                             <span className="text-[var(--theme-text)]">Calendar</span>
                         </div>
-                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
+                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
                             <md-icon>person</md-icon>
                             <span className="text-[var(--theme-text)]">Profile</span>
                         </div>

@@ -13,7 +13,7 @@ import "@material/web/tabs/primary-tab.js";
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { theme, toggleTheme } = useContext(ThemeContext);
+    const { mode, setMode, theme, setTheme } = useContext(ThemeContext);
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [logs, setLogs] = useState([]);
     const [metric, setMetric] = useState("steps");
@@ -46,7 +46,6 @@ const Dashboard = () => {
 
     const getSummary = () => {
         if (logs.length === 0) return { avg_steps: 'N/A', avg_sleep: 'N/A', avg_calories: 'N/A', avg_active_minutes: 'N/A' };
-
         const recentLogs = logs.slice(-7);
         const calcAverage = (field) => {
             const filteredLogs = recentLogs.filter(log => log[field] != null);
@@ -54,7 +53,6 @@ const Dashboard = () => {
             const total = filteredLogs.reduce((sum, log) => sum + log[field], 0);
             return (total / filteredLogs.length).toFixed(field === 'sleep_hours' ? 1 : 0);
         }
-
         return {
             avg_steps: calcAverage('steps'),
             avg_sleep: calcAverage('sleep_hours'),
@@ -65,26 +63,43 @@ const Dashboard = () => {
     
     const summary = getSummary();
 
+    const handleModeChange = (newMode) => {
+        setMode(newMode);
+        if (newMode !== 'custom') {
+            setTheme(newMode);
+        }
+    };
+
+    // Conditional class for the background
+    const dashboardBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
 
     return (
-        <div className="relative bg-[var(--theme-bg)] min-h-screen transition-colors duration-300">
+        <div className={`relative ${dashboardBgClass} min-h-screen transition-colors duration-300`}>
             <div className="absolute top-0 left-0 p-4 z-40">
                 <md-icon-button onClick={toggleSidebar}>
                     <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
                 </md-icon-button>
             </div>
-            <div className="absolute top-0 right-0 p-4 z-40">
-                <md-icon-button onClick={toggleTheme}>
-                    <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
+            
+            <div className="absolute top-0 right-0 p-4 z-40 flex gap-2">
+                <md-icon-button onClick={() => handleModeChange('light')} className={mode === 'light' ? 'bg-blue-200 dark:bg-blue-600' : ''}>
+                    <md-icon>light_mode</md-icon>
+                </md-icon-button>
+                <md-icon-button onClick={() => handleModeChange('dark')} className={mode === 'dark' ? 'bg-blue-200 dark:bg-blue-600' : ''}>
+                    <md-icon>dark_mode</md-icon>
+                </md-icon-button>
+                <md-icon-button onClick={() => handleModeChange('custom')} className={mode === 'custom' ? 'bg-blue-200 dark:bg-blue-600' : ''}>
+                    <md-icon>palette</md-icon>
                 </md-icon-button>
             </div>
+            
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
             <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
                 <div className="p-6 flex flex-col h-full">
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
                     </div>
-                     <nav className="flex flex-col gap-4">
+                    <nav className="flex flex-col gap-4">
                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/dashboard')}>
                             <md-icon>dashboard</md-icon>
                             <span className="text-[var(--theme-text)]">Dashboard</span>
@@ -113,7 +128,7 @@ const Dashboard = () => {
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Steps (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_steps}</p>
                     </div>
-                     <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Sleep (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_sleep}</p>
                     </div>
@@ -121,7 +136,7 @@ const Dashboard = () => {
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Calories (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_calories}</p>
                     </div>
-                     <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Active Mins (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_active_minutes}</p>
                     </div>
