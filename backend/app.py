@@ -4,9 +4,15 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import sqlite3
-from datetime import date
+from datetime import date, timedelta
 import io
 import csv
+
+# ML imports
+import joblib
+import pandas as pd
+from sklearn.linear_model import LinearRegression # New import for Phase 2
+import numpy as np # New import for Phase 2
 
 app = Flask(__name__)
 CORS(app)
@@ -17,6 +23,21 @@ app.config['UPLOAD_FOLDER'] = PROFILE_PIC_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Define the path to the ML model for daily analysis
+ML_MODEL_PATH = os.path.join('ml_models', 'good_day_model.joblib')
+ml_model = None
+
+# Load the ML model at application startup
+try:
+    if os.path.exists(ML_MODEL_PATH):
+        ml_model = joblib.load(ML_MODEL_PATH)
+        print("Daily analysis ML model loaded successfully.")
+    else:
+        print(f"Daily analysis ML model not found at {ML_MODEL_PATH}. Please run generate_ml_model.py first.")
+except Exception as e:
+    print(f"Error loading daily analysis ML model: {e}")
+    ml_model = None
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -282,6 +303,129 @@ def user_profile(user_id):
             return jsonify({"error": str(e)}), 500
         finally:
             conn.close()
+
+# Daily analysis ML endpoint (Phase 1)
+@app.route('/api/analyze_day', methods=['POST'])
+def analyze_day():
+    global ml_model # Access the globally loaded model
+    if ml_model is None:
+        return jsonify({'error': 'ML model not loaded. Please ensure generate_ml_model.py was run and the model file exists.'}), 503
+
+    data = request.json
+    
+    # Extract features, providing default values if missing
+    features_dict = {
+        'steps': data.get('steps', 0),
+        'sleep_hours': data.get('sleep_hours', 0),
+        'calorie_intake': data.get('calorie_intake', 0),
+        'active_minutes': data.get('active_minutes', 0)
+    }
+    
+    # Prepare data for the model
+    input_df = pd.DataFrame([features_dict], columns=['steps', 'sleep_hours', 'calorie_intake', 'active_minutes'])
+    
+    try:
+        prediction = ml_model.predict(input_df)[0]
+        
+        feedback = []
+        if features_dict['steps'] >= 10000:
+            feedback.append("You hit your steps goal!")
+        if features_dict['sleep_hours'] >= 7.5:
+            feedback.append("You got a great night's sleep.")
+        if features_dict['active_minutes'] >= 60:
+            feedback.append("You were very active today.")
+            
+        final_feedback = " ".join(feedback)
+        
+        if prediction == 1:
+            result = 'Good Day!'
+            message = f"AI Analysis: {result} {final_feedback}" if final_feedback else f"AI Analysis: {result}"
+        else:
+            result = 'Keep Pushing!'
+            if final_feedback:
+                message = f"AI Analysis: {result} Consider focusing on improving {' and '.join(feedback)}."
+            else:
+                message = f"AI Analysis: {result} Consider focusing on your steps, sleep, or active minutes."
+        
+        return jsonify({'prediction': result, 'message': message}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error making prediction: {str(e)}'}), 500
+
+# New endpoint for long-term trend prediction (Phase 2)
+@app.route('/api/predict_trend/<int:user_id>/<string:metric>', methods=['GET'])
+def predict_trend(user_id, metric):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    try:
+        print(f"Attempting to predict trend for user {user_id} and metric {metric}")
+        if metric not in ['steps', 'sleep_hours', 'water_glasses', 'calorie_intake', 
+                          'protein', 'carbs', 'fat', 'active_minutes', 
+                          'workout_intensity', 'stress_level', 'mindful_minutes', 
+                          'heart_rate', 'weight']:
+            print(f"Invalid metric: {metric}")
+            return jsonify({"error": "Invalid metric for trend prediction."}), 400
+
+        c.execute(f"SELECT date, {metric} FROM health_data WHERE user_id = ? AND {metric} IS NOT NULL ORDER BY date ASC", (user_id,))
+        rows = c.fetchall()
+        
+        print(f"Fetched {len(rows)} data points from the database.")
+        
+        if len(rows) < 2:
+            return jsonify({"message": "Not enough data to predict trends. Please log at least 2 days of data for this metric."}), 200
+
+        data_for_df = [dict(row) for row in rows]
+        df = pd.DataFrame(data_for_df)
+        
+        print("DataFrame created.")
+        
+        if metric not in df.columns or not pd.api.types.is_numeric_dtype(df[metric]):
+            print(f"Metric {metric} not found or is not a numeric type in DataFrame.")
+            return jsonify({"error": f"Invalid data for metric: {metric}."}), 400
+
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values(by='date')
+        df['ordinal_date'] = df['date'].apply(lambda x: x.toordinal())
+        print("Data prepared for model.")
+
+        X = df[['ordinal_date']]
+        y = df[metric]
+
+        model = LinearRegression()
+        model.fit(X, y)
+
+        last_date = df['date'].max()
+        future_dates = pd.to_datetime([last_date + timedelta(days=i) for i in range(1, 31)])
+        future_dates_ordinal = future_dates.to_series().apply(lambda x: x.toordinal()).to_numpy().reshape(-1, 1)
+
+        future_df = pd.DataFrame(future_dates_ordinal, columns=['ordinal_date'])
+        predicted_values = model.predict(future_df)
+        
+        # --- FIX: Ensure no negative predictions ---
+        predicted_values = np.maximum(0, predicted_values)
+        
+        print("Prediction made.")
+
+        predicted_data = []
+        for i, val in enumerate(predicted_values):
+            predicted_data.append({
+                'date': future_dates[i].isoformat().split('T')[0],
+                f'predicted_{metric}': round(float(val), 2)
+            })
+        
+        print("Prediction data formatted successfully.")
+        return jsonify(predicted_data), 200
+
+    except sqlite3.Error as e:
+        conn.rollback()
+        print(f"Database error: {str(e)}")
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred during trend prediction: {str(e)}")
+        return jsonify({"error": f"An unexpected error occurred during trend prediction."}), 500
+    finally:
+        conn.close()
 
 @app.route('/uploads/profile_pictures/<path:filename>')
 def uploaded_file(filename):

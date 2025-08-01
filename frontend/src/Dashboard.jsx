@@ -17,6 +17,7 @@ const Dashboard = () => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [logs, setLogs] = useState([]);
     const [metric, setMetric] = useState("steps");
+    const [dayAnalysisMessage, setDayAnalysisMessage] = useState(null); // Updated state for the detailed message
     
     const user = JSON.parse(localStorage.getItem("user"));
 
@@ -25,15 +26,35 @@ const Dashboard = () => {
             navigate("/");
             return;
         }
-        fetchData();
-    }, []);
-    
-    const fetchData = async () => {
+        fetchDataAndAnalyze(); // Call the combined function
+    }, [user.user_id, navigate]);
+
+    const fetchDataAndAnalyze = async () => {
         try {
             const res = await axios.get(`http://localhost:5000/api/logs/${user.user_id}`);
             setLogs(res.data);
+
+            // If there are logs, send the most recent one for ML analysis
+            if (res.data.length > 0) {
+                const latestLog = res.data[res.data.length - 1];
+                try {
+                    const analysisRes = await axios.post('http://localhost:5000/api/analyze_day', {
+                        steps: latestLog.steps,
+                        sleep_hours: latestLog.sleep_hours,
+                        calorie_intake: latestLog.calorie_intake,
+                        active_minutes: latestLog.active_minutes
+                    });
+                    setDayAnalysisMessage(analysisRes.data.message);
+                } catch (mlError) {
+                    console.error("Failed to get AI analysis:", mlError);
+                    setDayAnalysisMessage("AI analysis is currently unavailable.");
+                }
+            } else {
+                setDayAnalysisMessage("Log some data to get your first AI analysis!");
+            }
         } catch (error) {
             console.error("Failed to fetch logs:", error);
+            setDayAnalysisMessage("Error fetching data for analysis.");
         }
     };
 
@@ -70,7 +91,6 @@ const Dashboard = () => {
         }
     };
 
-    // Conditional class for the background
     const dashboardBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
 
     return (
@@ -123,6 +143,13 @@ const Dashboard = () => {
             </div>
 
             <main className="container mx-auto p-6 pt-20">
+                {/* Display AI Analysis Message here */}
+                {dayAnalysisMessage && (
+                    <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 p-4 rounded-xl mb-8 font-semibold">
+                        {dayAnalysisMessage}
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Steps (7d)</h3>
