@@ -67,7 +67,7 @@ def init_db():
             heart_rate INTEGER,
             weight REAL,
             symptoms TEXT,
-            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
             UNIQUE(user_id, date)
         )
     ''')
@@ -183,7 +183,7 @@ def get_health_logs(user_id):
     finally:
         conn.close()
 
-@app.route('/api/profile/<int:user_id>', methods=['GET', 'POST'])
+@app.route('/api/profile/<int:user_id>', methods=['GET', 'POST', 'DELETE'])
 def user_profile(user_id):
     conn = sqlite3.connect('health.db')
     conn.row_factory = sqlite3.Row
@@ -219,8 +219,10 @@ def user_profile(user_id):
         current_picture_path = current_picture_row[0] if current_picture_row else None
 
         if file and allowed_file(file.filename):
-            if current_picture_path and os.path.exists(current_picture_path):
-                os.remove(current_picture_path)
+            if current_picture_path:
+                full_path = os.path.join('backend', current_picture_path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
             
             _, f_ext = os.path.splitext(file.filename)
             filename = secure_filename(f"{user_id}_{date.today().isoformat()}{f_ext}")
@@ -228,8 +230,10 @@ def user_profile(user_id):
             file.save(filepath)
             update_data['profile_picture'] = os.path.join('uploads/profile_pictures', filename).replace("\\", "/")
         elif remove_picture:
-            if current_picture_path and os.path.exists(current_picture_path):
-                os.remove(current_picture_path)
+            if current_picture_path:
+                full_path = os.path.join('backend', current_picture_path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
             update_data['profile_picture'] = None
 
         if not update_data:
@@ -247,6 +251,34 @@ def user_profile(user_id):
             updated_profile = c.fetchone()
             return jsonify({"message": "Profile updated successfully", "profile": dict(updated_profile)}), 200
         except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+            
+    if request.method == 'DELETE':
+        try:
+            c.execute("SELECT profile_picture FROM users WHERE id = ?", (user_id,))
+            user_data = c.fetchone()
+            if not user_data:
+                return jsonify({"error": "User not found"}), 404
+
+            # Delete profile picture file if it exists
+            profile_picture_path = user_data['profile_picture']
+            if profile_picture_path:
+                full_path = os.path.join('backend', profile_picture_path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+
+            # Delete health data associated with the user
+            c.execute("DELETE FROM health_data WHERE user_id = ?", (user_id,))
+
+            # Delete the user itself
+            c.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            conn.commit()
+
+            return jsonify({"message": f"User {user_id} and all associated data deleted successfully."}), 200
+        except sqlite3.Error as e:
+            conn.rollback()
             return jsonify({"error": str(e)}), 500
         finally:
             conn.close()

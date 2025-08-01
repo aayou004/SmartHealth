@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
-import BackgroundSettings from "./BackgroundSettings.jsx"; // Import the new component
+import BackgroundSettings from "./BackgroundSettings.jsx";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/textfield/outlined-text-field.js";
@@ -38,7 +38,6 @@ const TextAreaFormField = ({ label, description, children }) => (
 
 const UserProfile = () => {
     const navigate = useNavigate();
-    // Destructure `mode` and `theme` from the context
     const { mode, theme } = useContext(ThemeContext);
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [profile, setProfile] = useState({});
@@ -140,6 +139,27 @@ const UserProfile = () => {
         }
     };
 
+    // New function to handle profile deletion
+    const handleDeleteProfile = async () => {
+        if (window.confirm("Are you sure you want to delete your profile? This action cannot be undone.")) {
+            try {
+                await axios.delete(`http://localhost:5000/api/profile/${user.user_id}`);
+                
+                // Clear user session and redirect
+                localStorage.removeItem("user");
+                localStorage.removeItem("mode");
+                localStorage.removeItem("theme");
+                localStorage.removeItem("backgroundImage");
+                setMessage("Profile deleted successfully.");
+                setTimeout(() => navigate("/"), 2000);
+            } catch (error) {
+                setMessage("Failed to delete profile.");
+                console.error("Profile deletion error:", error);
+                setTimeout(() => setMessage(""), 3000);
+            }
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem("user");
         navigate("/");
@@ -147,7 +167,6 @@ const UserProfile = () => {
 
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
-    // Conditional class for the background
     const profileBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
 
     return (
@@ -160,7 +179,7 @@ const UserProfile = () => {
             <div className="absolute top-0 right-0 p-4 z-40 flex items-center gap-2">
                 <md-outlined-button type="button" onClick={handleExport}>Export to CSV</md-outlined-button>
                 <md-filled-button type="button" onClick={handleProfileUpdate}>Save Changes</md-filled-button>
-                {/* Removed the theme toggle button from here */}
+                <md-outlined-button type="button" onClick={handleDeleteProfile} className="text-red-500 border-red-500">Delete Profile</md-outlined-button>
             </div>
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
             <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -195,7 +214,6 @@ const UserProfile = () => {
                 <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)]">
                     <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">User Profile</h2>
                     
-                    {/* The BackgroundSettings component is placed here, as requested */}
                     <BackgroundSettings />
 
                     <div className="flex justify-center mb-6">
