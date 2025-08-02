@@ -9,6 +9,8 @@ services:
     environment:
       - FLASK_APP=app.py
       - FLASK_ENV=development
+    env_file:
+      - ./backend/.env  # Added this line to load the .env file
 
   frontend:
     build: ./frontend

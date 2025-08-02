@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,12 +8,14 @@ import sqlite3
 from datetime import date, timedelta
 import io
 import csv
-
-# ML imports
+import google.generativeai as genai
 import joblib
 import pandas as pd
-from sklearn.linear_model import LinearRegression # New import for Phase 2
-import numpy as np # New import for Phase 2
+from sklearn.linear_model import LinearRegression
+import numpy as np
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -24,11 +27,9 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Define the path to the ML model for daily analysis
 ML_MODEL_PATH = os.path.join('ml_models', 'good_day_model.joblib')
 ml_model = None
 
-# Load the ML model at application startup
 try:
     if os.path.exists(ML_MODEL_PATH):
         ml_model = joblib.load(ML_MODEL_PATH)
@@ -38,6 +39,8 @@ try:
 except Exception as e:
     print(f"Error loading daily analysis ML model: {e}")
     ml_model = None
+    
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -283,17 +286,14 @@ def user_profile(user_id):
             if not user_data:
                 return jsonify({"error": "User not found"}), 404
 
-            # Delete profile picture file if it exists
             profile_picture_path = user_data['profile_picture']
             if profile_picture_path:
                 full_path = os.path.join('backend', profile_picture_path)
                 if os.path.exists(full_path):
                     os.remove(full_path)
 
-            # Delete health data associated with the user
             c.execute("DELETE FROM health_data WHERE user_id = ?", (user_id,))
 
-            # Delete the user itself
             c.execute("DELETE FROM users WHERE id = ?", (user_id,))
             conn.commit()
 
@@ -307,13 +307,12 @@ def user_profile(user_id):
 # Daily analysis ML endpoint (Phase 1)
 @app.route('/api/analyze_day', methods=['POST'])
 def analyze_day():
-    global ml_model # Access the globally loaded model
+    global ml_model
     if ml_model is None:
         return jsonify({'error': 'ML model not loaded. Please ensure generate_ml_model.py was run and the model file exists.'}), 503
 
     data = request.json
     
-    # Extract features, providing default values if missing
     features_dict = {
         'steps': data.get('steps', 0),
         'sleep_hours': data.get('sleep_hours', 0),
@@ -321,7 +320,6 @@ def analyze_day():
         'active_minutes': data.get('active_minutes', 0)
     }
     
-    # Prepare data for the model
     input_df = pd.DataFrame([features_dict], columns=['steps', 'sleep_hours', 'calorie_intake', 'active_minutes'])
     
     try:
@@ -351,7 +349,6 @@ def analyze_day():
     except Exception as e:
         return jsonify({'error': f'Error making prediction: {str(e)}'}), 500
 
-# New endpoint for long-term trend prediction (Phase 2)
 @app.route('/api/predict_trend/<int:user_id>/<string:metric>', methods=['GET'])
 def predict_trend(user_id, metric):
     conn = sqlite3.connect('health.db')
@@ -402,7 +399,6 @@ def predict_trend(user_id, metric):
         future_df = pd.DataFrame(future_dates_ordinal, columns=['ordinal_date'])
         predicted_values = model.predict(future_df)
         
-        # --- FIX: Ensure no negative predictions ---
         predicted_values = np.maximum(0, predicted_values)
         
         print("Prediction made.")
@@ -461,9 +457,50 @@ def export_csv(user_id):
         )
 
     except sqlite3.Error as e:
+        conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
 
+@app.route('/api/jim_chat', methods=['POST'])
+def jim_chat():
+    data = request.get_json()
+    user_message = data.get("message", "")
+    context = data.get("context", {})
+
+    if not user_message:
+        return jsonify({"error": "Message is required"}), 400
+
+    try:
+        prompt = f"""You are Jim, a friendly health assistant. Here's the user's latest log:\n{json.dumps(context, indent=2)}\n\nUser says: {user_message}\n\nRespond with helpful insights."""
+
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        response = model.generate_content(prompt)
+
+        return jsonify({"response": response.text.strip()})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+@app.route('/api/list_models', methods=['GET'])
+def list_models():
+    try:
+        models = genai.list_models()
+        # Return both name and supported methods (e.g. generateContent)
+        models_info = [
+            {
+                "name": model.name,
+                "supports_generate_content": "generateContent" in model.supported_generation_methods
+            }
+            for model in models
+        ]
+        return jsonify(models_info), 200
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+    
 if __name__ == '__main__':
     app.run(debug=True)

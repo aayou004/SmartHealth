@@ -1,7 +1,7 @@
-// src/App.jsx
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeContext } from "./ThemeContext.jsx";
+import JimAssistant from "./JimAssistant.jsx"; // Import the new component
 
 import AuthPage from "./AuthPage";
 import Dashboard from "./Dashboard";
@@ -14,8 +14,6 @@ function App() {
   const { mode, theme, backgroundImage } = useContext(ThemeContext);
 
   const isCustomMode = mode === 'custom';
-  
-  // Conditionally apply the background image style
   const mainBgStyle = isCustomMode && backgroundImage ? {
     backgroundImage: `url(${backgroundImage})`,
     backgroundSize: 'cover',
@@ -28,7 +26,6 @@ function App() {
       className={`min-h-screen transition-colors duration-300 ${isCustomMode ? 'bg-transparent' : (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100')}`}
       style={mainBgStyle}
     >
-      {/* Semi-transparent overlay only for custom mode */}
       {isCustomMode && (
         <div className={`absolute inset-0 z-0 bg-gray-800/80`}></div>
       )}
@@ -45,6 +42,9 @@ function App() {
           </Routes>
         </Router>
       </div>
+
+      {/* JimAssistant component is rendered here, outside the router */}
+      <JimAssistant />
     </div>
   );
 }

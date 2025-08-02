@@ -27,6 +27,7 @@ yarn-error.log*
 /backend/health_data/__pycache__/
 /backend/health_data/*.pyc
 /backend/ml_models/
+/backend/.env
 
 /backend/health.db
 /backend/uploads
