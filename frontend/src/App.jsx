@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeContext } from "./ThemeContext.jsx";
-import JimAssistant from "./JimAssistant.jsx"; // Import the new component
+import JimAssistant from "./JimAssistant.jsx";
 
 import AuthPage from "./AuthPage";
 import Dashboard from "./Dashboard";
@@ -26,9 +26,7 @@ function App() {
       className={`min-h-screen transition-colors duration-300 ${isCustomMode ? 'bg-transparent' : (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100')}`}
       style={mainBgStyle}
     >
-      {isCustomMode && (
-        <div className={`absolute inset-0 z-0 bg-gray-800/80`}></div>
-      )}
+      {/* The semi-transparent overlay has been removed here */}
       
       <div className="relative z-10">
         <Router>
@@ -43,7 +41,6 @@ function App() {
         </Router>
       </div>
 
-      {/* JimAssistant component is rendered here, outside the router */}
       <JimAssistant />
     </div>
   );

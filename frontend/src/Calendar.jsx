@@ -13,8 +13,7 @@ import "@material/web/textfield/outlined-text-field.js";
 const Calendar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    // Destructure `mode` from the context to check the current mode
-    const { mode, theme } = useContext(ThemeContext);
+    const { mode, theme, toggleTheme } = useContext(ThemeContext);
 
     const [logs, setLogs] = useState([]);
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -187,7 +186,9 @@ const Calendar = () => {
                     <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
                 </md-icon-button>
             </div>
-            {/* The theme toggle button has been removed from here */}
+            <div className="absolute top-0 right-0 p-4 z-40">
+                {/* The theme toggle button is removed from here */}
+            </div>
 
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
             <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -204,7 +205,7 @@ const Calendar = () => {
                             <md-icon>calendar_month</md-icon>
                             <span className="text-[var(--theme-text)]">Calendar</span>
                         </div>
-                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
+                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
                             <md-icon>person</md-icon>
                             <span className="text-[var(--theme-text)]">Profile</span>
                         </div>

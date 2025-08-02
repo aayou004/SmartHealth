@@ -23,18 +23,18 @@ const HealthChart = ({ metric }) => {
   // Define colors based on theme from CSS variables
   const colors = {
     light: {
-      tick: 'var(--dracula-background)',
-      grid: 'var(--theme-chart-grid)',
-      line: 'var(--theme-chart-line)',
-      trendLine: '#8884d8',
+      tick: 'var(--theme-text)', // Use theme-text for tick marks
+      grid: 'var(--theme-outline)', // Use theme-outline for grid lines
+      line: 'var(--theme-primary)', // Use theme-primary for the main line
+      trendLine: 'var(--theme-secondary)', // Use theme-secondary for the trend line
       tooltipBg: 'var(--theme-card-bg)',
       tooltipBorder: 'var(--theme-outline)',
     },
     dark: {
-      tick: 'var(--dracula-foreground)',
-      grid: 'var(--theme-chart-grid)',
-      line: 'var(--theme-chart-line)',
-      trendLine: '#82ca9d',
+      tick: 'var(--theme-text)', // Use theme-text for tick marks
+      grid: 'var(--theme-outline)', // Use theme-outline for grid lines
+      line: 'var(--theme-primary)', // Use theme-primary for the main line
+      trendLine: 'var(--theme-secondary)', // Use theme-secondary for the trend line
       tooltipBg: 'var(--theme-card-bg)',
       tooltipBorder: 'var(--theme-outline)',
     }
@@ -73,7 +73,6 @@ const HealthChart = ({ metric }) => {
 
   }, [metric, user]);
 
-  // Use useMemo to create a single, combined data array for the chart
   const combinedChartData = useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
       return [];
@@ -100,7 +99,6 @@ const HealthChart = ({ metric }) => {
 
   }, [historicalData, metric, trendData]);
   
-  // Use useMemo to filter the data to the desired viewable range
   const filteredChartData = useMemo(() => {
     if (!combinedChartData || combinedChartData.length === 0) {
       return [];
@@ -125,7 +123,6 @@ const HealthChart = ({ metric }) => {
 
   }, [combinedChartData, historicalData]);
 
-  // A formatter function for the X-Axis labels
   const xAxisTickFormatter = (tickItem) => {
     const tickDate = new Date(tickItem);
     return format(tickDate, 'MMM d');

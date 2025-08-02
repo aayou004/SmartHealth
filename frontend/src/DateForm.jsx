@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { ThemeContext } from "./ThemeContext";
+import { ThemeContext } from "./ThemeContext"; // Import ThemeContext
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/icon/icon.js";
@@ -37,7 +37,8 @@ const DateForm = () => {
     const { date: selectedDate } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { theme, toggleTheme } = useContext(ThemeContext);
+    // Destructure `mode` from ThemeContext
+    const { mode, theme, toggleTheme } = useContext(ThemeContext); 
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [logData, setLogData] = useState({});
     const [message, setMessage] = useState("");
@@ -127,9 +128,12 @@ const DateForm = () => {
         navigate('/calendar', { state: calendarState });
     };
 
+    // Conditional class for the background
+    const dateFormBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
+
     return (
-        <div className="relative bg-[var(--theme-bg)] min-h-screen transition-colors duration-300">
-             <div className="absolute top-0 left-0 p-4 z-40">
+        <div className={`relative ${dateFormBgClass} min-h-screen transition-colors duration-300`}>
+            <div className="absolute top-0 left-0 p-4 z-40">
                 <md-icon-button onClick={toggleSidebar}>
                     <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
                 </md-icon-button>
@@ -137,9 +141,7 @@ const DateForm = () => {
             <div className="absolute top-0 right-0 p-4 z-40 flex items-center gap-2">
                 <md-outlined-button onClick={handleBackToCalendar}>Back to Calendar</md-outlined-button>
                 <md-filled-button type="button" onClick={() => document.getElementById('log-form')?.requestSubmit()}>Save Entry</md-filled-button>
-                <md-icon-button onClick={toggleTheme}>
-                    <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
-                </md-icon-button>
+                {/* Removed the theme toggle button from here, as it's now controlled globally from Dashboard */}
             </div>
 
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
@@ -148,7 +150,7 @@ const DateForm = () => {
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
                     </div>
-                     <nav className="flex flex-col gap-4">
+                    <nav className="flex flex-col gap-4">
                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/dashboard')}>
                             <md-icon>dashboard</md-icon>
                             <span className="text-[var(--theme-text)]">Dashboard</span>
@@ -192,7 +194,7 @@ const DateForm = () => {
                         
                         <AccordionCategory title="Physical Activity">
                             <FormField label="Steps" description="Enter the total number of steps taken.">
-                                 <md-outlined-text-field class="w-full max-w-xs" id="steps" type="number" value={logData.steps || ""} onInput={handleInputChange}></md-outlined-text-field>
+                                <md-outlined-text-field class="w-full max-w-xs" id="steps" type="number" value={logData.steps || ""} onInput={handleInputChange}></md-outlined-text-field>
                             </FormField>
                             <FormField label="Active Minutes" description="Enter the total minutes of physical activity.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="active_minutes" type="number" value={logData.active_minutes || ""} onInput={handleInputChange}></md-outlined-text-field>
@@ -203,11 +205,11 @@ const DateForm = () => {
                             <FormField label="Workout Intensity" description="Rate workout intensity on a scale of 1 to 5.">
                                 <div className="flex gap-2">
                                     {[1, 2, 3, 4, 5].map(val => (
-                                         <md-icon-button key={val} type="button" onClick={() => handleRatingChange('workout_intensity', val)} className={`${(logData.workout_intensity || 0) < val ? 'opacity-40' : ''}`}>
-                                             <md-icon>star</md-icon>
-                                         </md-icon-button>
-                                     ))}
-                                 </div>
+                                        <md-icon-button key={val} type="button" onClick={() => handleRatingChange('workout_intensity', val)} className={`${(logData.workout_intensity || 0) < val ? 'opacity-40' : ''}`}>
+                                            <md-icon>star</md-icon>
+                                        </md-icon-button>
+                                    ))}
+                                </div>
                             </FormField>
                         </AccordionCategory>
 
@@ -230,23 +232,23 @@ const DateForm = () => {
                         </AccordionCategory>
 
                         <AccordionCategory title="General Health & Wellness">
-                             <FormField label="Mood" description="Rate your overall mood on a scale of 1 to 5.">
+                            <FormField label="Mood" description="Rate your overall mood on a scale of 1 to 5.">
                                 <div className="flex gap-2">
-                                     {[1, 2, 3, 4, 5].map(val => (
-                                         <md-icon-button key={val} type="button" onClick={() => handleRatingChange('mood', val)} className={`${(logData.mood || 0) < val ? 'opacity-40' : ''}`}>
-                                             <md-icon>sentiment_satisfied</md-icon>
-                                         </md-icon-button>
-                                     ))}
-                                 </div>
+                                    {[1, 2, 3, 4, 5].map(val => (
+                                        <md-icon-button key={val} type="button" onClick={() => handleRatingChange('mood', val)} className={`${(logData.mood || 0) < val ? 'opacity-40' : ''}`}>
+                                            <md-icon>sentiment_satisfied</md-icon>
+                                        </md-icon-button>
+                                    ))}
+                                </div>
                             </FormField>
                             <FormField label="Stress Level" description="Rate your stress level on a scale of 1 to 5.">
                                 <div className="flex gap-2">
-                                     {[1, 2, 3, 4, 5].map(val => (
-                                         <md-icon-button key={val} type="button" onClick={() => handleRatingChange('stress_level', val)} className={`${(logData.stress_level || 0) < val ? 'opacity-40' : ''}`}>
-                                             <md-icon>battery_alert</md-icon>
-                                         </md-icon-button>
-                                     ))}
-                                 </div>
+                                    {[1, 2, 3, 4, 5].map(val => (
+                                        <md-icon-button key={val} type="button" onClick={() => handleRatingChange('stress_level', val)} className={`${(logData.stress_level || 0) < val ? 'opacity-40' : ''}`}>
+                                            <md-icon>battery_alert</md-icon>
+                                        </md-icon-button>
+                                    ))}
+                                </div>
                             </FormField>
                             <FormField label="Mindful Minutes" description="Enter the total minutes of mindfulness.">
                                 <md-outlined-text-field class="w-full max-w-xs" id="mindful_minutes" type="number" value={logData.mindful_minutes || ""} onInput={handleInputChange}></md-outlined-text-field>

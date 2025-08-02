@@ -17,7 +17,7 @@ const Dashboard = () => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [logs, setLogs] = useState([]);
     const [metric, setMetric] = useState("steps");
-    const [dayAnalysisMessage, setDayAnalysisMessage] = useState(null); // Updated state for the detailed message
+    const [dayAnalysisMessage, setDayAnalysisMessage] = useState(null); 
     
     const user = JSON.parse(localStorage.getItem("user"));
 
@@ -26,7 +26,7 @@ const Dashboard = () => {
             navigate("/");
             return;
         }
-        fetchDataAndAnalyze(); // Call the combined function
+        fetchDataAndAnalyze();
     }, [user.user_id, navigate]);
 
     const fetchDataAndAnalyze = async () => {
@@ -34,7 +34,6 @@ const Dashboard = () => {
             const res = await axios.get(`http://localhost:5000/api/logs/${user.user_id}`);
             setLogs(res.data);
 
-            // If there are logs, send the most recent one for ML analysis
             if (res.data.length > 0) {
                 const latestLog = res.data[res.data.length - 1];
                 try {
@@ -92,6 +91,7 @@ const Dashboard = () => {
     };
 
     const dashboardBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
+    const cardBgClass = mode === 'custom' ? 'bg-[var(--theme-card-bg-alpha)]' : 'bg-[var(--theme-card-bg)]';
 
     return (
         <div className={`relative ${dashboardBgClass} min-h-screen transition-colors duration-300`}>
@@ -114,7 +114,7 @@ const Dashboard = () => {
             </div>
             
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
-            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+            <div className={`fixed top-0 left-0 h-full ${cardBgClass} w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
                 <div className="p-6 flex flex-col h-full">
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
@@ -143,34 +143,33 @@ const Dashboard = () => {
             </div>
 
             <main className="container mx-auto p-6 pt-20">
-                {/* Display AI Analysis Message here */}
                 {dayAnalysisMessage && (
-                    <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 p-4 rounded-xl mb-8 font-semibold">
+                    <div className={`${cardBgClass} text-[var(--theme-text)] p-4 rounded-xl mb-8 font-semibold border border-[var(--theme-outline)]`}>
                         {dayAnalysisMessage}
                     </div>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className={`${cardBgClass} p-4 flex flex-col items-center justify-center rounded-xl border border-[var(--theme-outline)]`}>
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Steps (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_steps}</p>
                     </div>
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className={`${cardBgClass} p-4 flex flex-col items-center justify-center rounded-xl border border-[var(--theme-outline)]`}>
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Sleep (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_sleep}</p>
                     </div>
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className={`${cardBgClass} p-4 flex flex-col items-center justify-center rounded-xl border border-[var(--theme-outline)]`}>
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Calories (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_calories}</p>
                     </div>
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className={`${cardBgClass} p-4 flex flex-col items-center justify-center rounded-xl border border-[var(--theme-outline)]`}>
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Active Mins (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_active_minutes}</p>
                     </div>
                 </div>
 
                 {logs.length > 0 && (
-                    <div className="bg-[var(--theme-card-bg)] p-4 rounded-xl border border-[var(--theme-outline)]">
+                    <div className={`${cardBgClass} p-4 rounded-xl border border-[var(--theme-outline)]`}>
                         <md-tabs aria-label="Select metric to display" onchange={(e) => setMetric(e.target.activeTab.id)}>
                             <md-primary-tab id="steps" active>Steps</md-primary-tab>
                             <md-primary-tab id="sleep_hours">Sleep</md-primary-tab>

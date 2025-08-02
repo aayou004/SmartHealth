@@ -3,30 +3,31 @@
 @tailwind utilities;
 
 :root {
-  --md-ref-typeface-brand: 'Inter', sans-serif;
-  --md-ref-typeface-plain: 'Inter', sans-serif;
+  /* Dracula Theme Colors (used as fallback) */
   --dracula-background: #282A36;
   --dracula-current-line: #44475A;
   --dracula-foreground: #F8F8F2;
   --dracula-comment: #6272A4;
   --dracula-purple: #BD93F9;
   --dracula-pink: #FF79C6;
-}
+  
+  /* Fonts */
+  --md-ref-typeface-brand: 'Inter', sans-serif;
+  --md-ref-typeface-plain: 'Inter', sans-serif;
 
-body {
+  /* Default Theme (Light) */
   --theme-bg: var(--dracula-foreground);
   --theme-text: var(--dracula-background);
   --theme-primary: var(--dracula-comment);
   --theme-primary-text: var(--dracula-foreground);
   --theme-secondary: var(--dracula-pink);
   --theme-card-bg: #ffffff;
+  --theme-card-bg-alpha: rgba(255, 255, 255, 0.75); /* New variable */
   --theme-outline: #d1d5db;
   --theme-chart-line: var(--dracula-pink);
   --theme-chart-grid: #e5e7eb;
 
-  background-color: var(--theme-bg);
-  color: var(--theme-text);
-
+  /* Material Web Component Colors */
   --md-sys-color-primary: var(--theme-primary);
   --md-sys-color-on-primary: var(--theme-primary-text);
   --md-sys-color-surface: var(--theme-card-bg);
@@ -39,20 +40,23 @@ body {
   --md-sys-color-on-secondary-container: #1d192b;
 }
 
-.dark body {
+body {
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+.dark {
   --theme-bg: var(--dracula-background);
   --theme-text: var(--dracula-foreground);
   --theme-primary: var(--dracula-purple);
   --theme-primary-text: var(--dracula-background);
   --theme-secondary: var(--dracula-pink);
   --theme-card-bg: var(--dracula-current-line);
+  --theme-card-bg-alpha: rgba(68, 71, 90, 0.75); /* New variable */
   --theme-outline: var(--dracula-comment);
   --theme-chart-line: var(--dracula-pink);
   --theme-chart-grid: var(--dracula-current-line);
-
-  background-color: var(--theme-bg);
-  color: var(--theme-text);
-
+  
   --md-sys-color-primary: var(--theme-primary);
   --md-sys-color-on-primary: var(--theme-primary-text);
   --md-sys-color-surface: var(--theme-card-bg);
@@ -63,4 +67,9 @@ body {
   --md-sys-color-on-surface-variant: var(--dracula-comment);
   --md-sys-color-secondary-container: var(--dracula-background);
   --md-sys-color-on-secondary-container: var(--dracula-purple);
+}
+
+/* New CSS to apply semi-transparent background to cards */
+.theme-card-bg-alpha {
+  background-color: var(--theme-card-bg-alpha);
 }
