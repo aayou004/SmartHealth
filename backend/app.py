@@ -167,8 +167,8 @@ def log_health_data():
     c = conn.cursor()
 
     try:
-        keys = [key for key, value in log_data.items() if value is not None]
-        values = [value for value in log_data.values() if value is not None]
+        keys = [key for key in log_data.keys() if log_data[key] is not None]
+        values = [log_data[key] for key in keys]
         
         columns = ', '.join(keys)
         placeholders = ', '.join(['?'] * len(values))
@@ -423,6 +423,77 @@ def predict_trend(user_id, metric):
     finally:
         conn.close()
 
+# In your app.py, replace the jim_chat function with this:
+@app.route('/api/jim_chat', methods=['POST', 'OPTIONS'])
+def jim_chat():
+    try:
+        if request.method == 'OPTIONS':
+            print("Received OPTIONS request for /api/jim_chat")
+            return jsonify({}), 200
+        
+        print("Received POST request for /api/jim_chat")
+
+        request_data = request.get_json(silent=True)
+        if request_data is None:
+            print("Error: POST request did not contain valid JSON data.")
+            return jsonify({"response": "The request was malformed. Please check your frontend code."}), 400
+
+        user_id = request_data.get('user_id')
+        user_message = request_data.get('message')
+        conversation_history = request_data.get('history', [])
+        latest_log = request_data.get('context', {})
+
+        print(f"User ID: {user_id}, Message: {user_message}")
+
+        if not user_id:
+            print("Error: User not authenticated")
+            return jsonify({"error": "User not authenticated"}), 401
+
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("ERROR: GEMINI_API_KEY not set.")
+            return jsonify({"response": "I cannot connect to my services. Please ask the administrator to check the API key."}), 500
+        
+        context_string = ""
+        if latest_log:
+            context_string = f"""
+            Here is the user's latest health log data for you to analyze:
+            Date: {latest_log.get('date')}
+            Steps: {latest_log.get('steps')}
+            Sleep (hours): {latest_log.get('sleep_hours')}
+            Calorie Intake: {latest_log.get('calorie_intake')}
+            Active Minutes: {latest_log.get('active_minutes')}
+            Stress Level (1-5): {latest_log.get('stress_level')}
+            Mood (1-5): {latest_log.get('mood')}
+            """
+
+        prompt = f"""
+        You are Jim, an empathetic and helpful AI health assistant.
+        Your primary role is to provide concise, friendly, and encouraging feedback on a user's health data.
+        Your tone is supportive and motivational.
+        
+        Do not provide medical advice.
+
+        {context_string}
+
+        The user has asked you to: "{user_message}"
+
+        Respond directly to the user's request. Keep your response to a maximum of 3 sentences.
+        """
+        
+        print("Prompt sent to Gemini.")
+
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        
+        chat = model.start_chat(history=conversation_history)
+
+        response = chat.send_message(prompt)
+
+        return jsonify({"response": response.text}), 200
+    except Exception as e:
+        print(f"Jim API Error: {str(e)}")
+        return jsonify({"response": "An unexpected error occurred with the AI assistant."}), 500
+    
 @app.route('/uploads/profile_pictures/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -462,45 +533,5 @@ def export_csv(user_id):
     finally:
         conn.close()
 
-@app.route('/api/jim_chat', methods=['POST'])
-def jim_chat():
-    data = request.get_json()
-    user_message = data.get("message", "")
-    context = data.get("context", {})
-
-    if not user_message:
-        return jsonify({"error": "Message is required"}), 400
-
-    try:
-        prompt = f"""You are Jim, a friendly health assistant. Here's the user's latest log:\n{json.dumps(context, indent=2)}\n\nUser says: {user_message}\n\nRespond with helpful insights."""
-
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
-        response = model.generate_content(prompt)
-
-        return jsonify({"response": response.text.strip()})
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
-
-@app.route('/api/list_models', methods=['GET'])
-def list_models():
-    try:
-        models = genai.list_models()
-        # Return both name and supported methods (e.g. generateContent)
-        models_info = [
-            {
-                "name": model.name,
-                "supports_generate_content": "generateContent" in model.supported_generation_methods
-            }
-            for model in models
-        ]
-        return jsonify(models_info), 200
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-    
 if __name__ == '__main__':
     app.run(debug=True)
