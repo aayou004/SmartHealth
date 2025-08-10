@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import { motion, AnimatePresence } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/textfield/outlined-text-field.js";
@@ -12,9 +13,41 @@ import "@material/web/select/select-option.js";
 import "@material/web/menu/menu.js";
 import "@material/web/menu/menu-item.js";
 
+const AccordionCategory = ({ title, children, initialOpen = false }) => {
+    const [isOpen, setIsOpen] = useState(initialOpen);
+    return (
+        <div>
+            <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center py-4 text-left">
+                <span className="text-xl font-semibold text-[var(--theme-text)]">{title}</span>
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+                    <md-icon>expand_more</md-icon>
+                </motion.div>
+            </button>
+            <AnimatePresence initial={false}>
+                {isOpen && (
+                    <motion.div
+                        key="content"
+                        initial="collapsed"
+                        animate="open"
+                        exit="collapsed"
+                        variants={{
+                            open: { opacity: 1, height: "auto" },
+                            collapsed: { opacity: 0, height: 0 }
+                        }}
+                        transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    >
+                        <div className="pb-2 pt-2">
+                            {children}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 
 const FormField = ({ label, children }) => (
-    <div className="flex items-center justify-between py-3 gap-4">
+    <div className="p-4 rounded-lg border border-[var(--theme-outline)] mb-4 flex items-center justify-between gap-4">
         <div className="w-1/2">
             <label className="font-semibold text-[var(--theme-text)]">{label}</label>
         </div>
@@ -25,7 +58,7 @@ const FormField = ({ label, children }) => (
 );
 
 const TextAreaFormField = ({ label, description, children }) => (
-    <div className="py-3">
+    <div className="p-4 rounded-lg border border-[var(--theme-outline)] mb-4">
         <div className="mb-2">
             <label className="font-semibold text-[var(--theme-text)] block">{label}</label>
             {description && <p className="text-xs text-[var(--theme-text)] opacity-70 mt-1">{description}</p>}
@@ -236,51 +269,53 @@ const UserProfile = () => {
                         </div>
 
                         <form id="profile-form" onSubmit={handleProfileUpdate}>
-                            <FormField label="Name">
-                                <md-outlined-text-field class="w-full max-w-xs" id="name" value={profile.name || ""} onInput={handleInputChange}></md-outlined-text-field>
-                            </FormField>
-                             <FormField label="Gender">
-                                <md-outlined-select class="w-full max-w-xs" id="gender" value={profile.gender || ""} onChange={handleInputChange}>
-                                    <md-select-option value=""></md-select-option>
-                                    <md-select-option value="male">Male</md-select-option>
-                                    <md-select-option value="female">Female</md-select-option>
-                                    <md-select-option value="non-binary">Non-binary</md-select-option>
-                                    <md-select-option value="prefer-not-to-say">Prefer not to say</md-select-option>
-                                </md-outlined-select>
-                            </FormField>
-                            <FormField label="Pronouns">
-                                <md-outlined-select class="w-full max-w-xs" id="pronouns" value={profile.pronouns || ""} onChange={handleInputChange}>
-                                    <md-select-option value=""></md-select-option>
-                                    <md-select-option value="he/him">he/him</md-select-option>
-                                    <md-select-option value="she/her">she/her</md-select-option>
-                                    <md-select-option value="they/them">they/them</md-select-option>
-                                    <md-select-option value="it/its">it/its</md-select-option>
-                                    <md-select-option value="other/unspecified">other/unspecified</md-select-option>
-                                </md-outlined-select>
-                            </FormField>
-                            <FormField label="Date of Birth">
-                                <md-outlined-text-field class="w-full max-w-xs" id="dob" type="date" value={profile.dob || ""} onInput={handleInputChange}></md-outlined-text-field>
-                            </FormField>
-                            <FormField label="Height (cm)">
-                                <md-outlined-text-field class="w-full max-w-xs" id="height" type="number" value={profile.height || ""} onInput={handleInputChange}></md-outlined-text-field>
-                            </FormField>
-                            <FormField label="Weight (kg)">
-                                <md-outlined-text-field class="w-full max-w-xs" id="weight" type="number" value={profile.weight || ""} onInput={handleInputChange}></md-outlined-text-field>
-                            </FormField>
-                            <FormField label="Blood Type">
-                                <md-outlined-select class="w-full max-w-xs" id="blood_type" value={profile.blood_type || ""} onChange={handleInputChange}>
-                                    <md-select-option value=""></md-select-option>
-                                    <md-select-option value="A+">A+</md-select-option>
-                                    <md-select-option value="A-">A-</md-select-option>
-                                    <md-select-option value="B+">B+</md-select-option>
-                                    <md-select-option value="B-">B-</md-select-option>
-                                    <md-select-option value="AB+">AB+</md-select-option>
-                                    <md-select-option value="AB-">AB-</md-select-option>
-                                    <md-select-option value="O+">O+</md-select-option>
-                                    <md-select-option value="O-">O-</md-select-option>
-                                </md-outlined-select>
-                            </FormField>
-                            <div className="mt-3">
+                            <AccordionCategory title="Personal Information">
+                                <FormField label="Name">
+                                    <md-outlined-text-field class="w-full max-w-xs" id="name" value={profile.name || ""} onInput={handleInputChange}></md-outlined-text-field>
+                                </FormField>
+                                 <FormField label="Gender">
+                                    <md-outlined-select class="w-full max-w-xs" id="gender" value={profile.gender || ""} onChange={handleInputChange}>
+                                        <md-select-option value=""></md-select-option>
+                                        <md-select-option value="male">Male</md-select-option>
+                                        <md-select-option value="female">Female</md-select-option>
+                                        <md-select-option value="non-binary">Non-binary</md-select-option>
+                                        <md-select-option value="prefer-not-to-say">Prefer not to say</md-select-option>
+                                    </md-outlined-select>
+                                </FormField>
+                                <FormField label="Pronouns">
+                                    <md-outlined-select class="w-full max-w-xs" id="pronouns" value={profile.pronouns || ""} onChange={handleInputChange}>
+                                        <md-select-option value=""></md-select-option>
+                                        <md-select-option value="he/him">he/him</md-select-option>
+                                        <md-select-option value="she/her">she/her</md-select-option>
+                                        <md-select-option value="they/them">they/them</md-select-option>
+                                        <md-select-option value="it/its">it/its</md-select-option>
+                                        <md-select-option value="other/unspecified">other/unspecified</md-select-option>
+                                    </md-outlined-select>
+                                </FormField>
+                                <FormField label="Date of Birth">
+                                    <md-outlined-text-field class="w-full max-w-xs" id="dob" type="date" value={profile.dob || ""} onInput={handleInputChange}></md-outlined-text-field>
+                                </FormField>
+                                <FormField label="Height (cm)">
+                                    <md-outlined-text-field class="w-full max-w-xs" id="height" type="number" value={profile.height || ""} onInput={handleInputChange}></md-outlined-text-field>
+                                </FormField>
+                                <FormField label="Weight (kg)">
+                                    <md-outlined-text-field class="w-full max-w-xs" id="weight" type="number" value={profile.weight || ""} onInput={handleInputChange}></md-outlined-text-field>
+                                </FormField>
+                                <FormField label="Blood Type">
+                                    <md-outlined-select class="w-full max-w-xs" id="blood_type" value={profile.blood_type || ""} onChange={handleInputChange}>
+                                        <md-select-option value=""></md-select-option>
+                                        <md-select-option value="A+">A+</md-select-option>
+                                        <md-select-option value="A-">A-</md-select-option>
+                                        <md-select-option value="B+">B+</md-select-option>
+                                        <md-select-option value="B-">B-</md-select-option>
+                                        <md-select-option value="AB+">AB+</md-select-option>
+                                        <md-select-option value="AB-">AB-</md-select-option>
+                                        <md-select-option value="O+">O+</md-select-option>
+                                        <md-select-option value="O-">O-</md-select-option>
+                                    </md-outlined-select>
+                                </FormField>
+                            </AccordionCategory>
+                            <AccordionCategory title="Health & Lifestyle">
                                 <TextAreaFormField label="Primary Goals" description="List your main health and wellness objectives (e.g., lose weight, build muscle).">
                                     <md-outlined-text-field class="w-full resize-none" id="primary_goals" type="textarea" rows="3" value={profile.primary_goals || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </TextAreaFormField>
@@ -296,7 +331,7 @@ const UserProfile = () => {
                                 <TextAreaFormField label="Workout Preferences" description="List your preferred physical activities (e.g., running, yoga, team sports).">
                                     <md-outlined-text-field class="w-full resize-none" id="workout_preferences" type="textarea" rows="3" value={profile.workout_preferences || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </TextAreaFormField>
-                            </div>
+                            </AccordionCategory>
                         </form>
                         <div className="mt-6 flex justify-end gap-4">
                             <md-outlined-button type="button" onClick={handleExport}>Export to CSV</md-outlined-button>

@@ -38,17 +38,13 @@ export const ThemeProvider = ({ children }) => {
     }
   }, []);
 
-  const toggleTheme = () => {
-    setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
-
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);
   };
 
   const value = {
     theme,
-    toggleTheme,
+    setTheme,
     backgroundImage,
     setBackgroundImage,
     isSidebarOpen,

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import { motion, AnimatePresence } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/icon/icon.js";
@@ -14,22 +15,52 @@ const AccordionCategory = ({ title, children, initialOpen = false }) => {
         <div>
             <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center py-4 text-left">
                 <span className="text-xl font-semibold text-[var(--theme-text)]">{title}</span>
-                <md-icon>{isOpen ? 'expand_less' : 'expand_more'}</md-icon>
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+                    <md-icon>expand_more</md-icon>
+                </motion.div>
             </button>
-            {isOpen && <div className="pb-2">{children}</div>}
+            <AnimatePresence initial={false}>
+                {isOpen && (
+                    <motion.div
+                        key="content"
+                        initial="collapsed"
+                        animate="open"
+                        exit="collapsed"
+                        variants={{
+                            open: { opacity: 1, height: "auto" },
+                            collapsed: { opacity: 0, height: 0 }
+                        }}
+                        transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    >
+                        <div className="pb-2 pt-2">
+                            {children}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
 
 const FormField = ({ label, description, children }) => (
-    <div className="flex items-center justify-between py-3 gap-4">
+    <div className="p-4 rounded-lg border border-[var(--theme-outline)] mb-4 flex items-center justify-between gap-4">
         <div className="w-1/2">
             <label className="font-semibold text-[var(--theme-text)]">{label}</label>
-            <p className="text-xs text-[var(--theme-text)] opacity-70 mt-1">{description}</p>
+            {description && <p className="text-xs text-[var(--theme-text)] opacity-70 mt-1">{description}</p>}
         </div>
         <div className="w-1/2 flex justify-end">
             {children}
         </div>
+    </div>
+);
+
+const TextAreaFormField = ({ label, description, children }) => (
+    <div className="p-4 rounded-lg border border-[var(--theme-outline)] mb-4">
+        <div className="mb-2">
+            <label className="font-semibold text-[var(--theme-text)] block">{label}</label>
+            {description && <p className="text-xs text-[var(--theme-text)] opacity-70 mt-1">{description}</p>}
+        </div>
+        {children}
     </div>
 );
 
@@ -172,15 +203,16 @@ const DateForm = () => {
                             {new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
                         <form id="log-form" onSubmit={handleLogSubmit}>
-                            <md-outlined-text-field
-                                class="w-full mb-4"
-                                id="journal_entry"
-                                type="textarea"
-                                rows="8"
-                                placeholder="Write a brief entry about your day..."
-                                value={logData.journal_entry || ""}
-                                onInput={handleInputChange}
-                            ></md-outlined-text-field>
+                            <TextAreaFormField label="Journal Entry" description="Write a brief entry about your day...">
+                                <md-outlined-text-field
+                                    class="w-full resize-none"
+                                    id="journal_entry"
+                                    type="textarea"
+                                    rows="8"
+                                    value={logData.journal_entry || ""}
+                                    onInput={handleInputChange}
+                                ></md-outlined-text-field>
+                            </TextAreaFormField>
                             
                             <AccordionCategory title="Physical Activity">
                                 <FormField label="Steps" description="Enter the total number of steps taken.">
