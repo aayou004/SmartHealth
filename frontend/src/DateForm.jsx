@@ -143,7 +143,7 @@ const DateForm = () => {
             </div>
 
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
-            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} backdrop-blur-lg`}>
                 <div className="p-6 flex flex-col h-full">
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
@@ -172,7 +172,7 @@ const DateForm = () => {
             </div>
 
             <main className="container mx-auto p-6 pt-24">
-                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)]">
+                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
                     <h2 className="text-3xl font-bold mb-1 text-center text-[var(--theme-text)]">
                         Daily Log
                     </h2>

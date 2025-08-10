@@ -11,6 +11,8 @@
   --dracula-comment: #6272A4;
   --dracula-purple: #BD93F9;
   --dracula-pink: #FF79C6;
+  --theme-surface-solid-light: #FFFFFF;
+  --theme-surface-solid-dark: var(--dracula-current-line);
 }
 
 body {
@@ -19,12 +21,14 @@ body {
   --theme-primary: var(--dracula-comment);
   --theme-primary-text: var(--dracula-foreground);
   --theme-secondary: var(--dracula-pink);
-  --theme-card-bg: #ffffff;
-  --theme-outline: #d1d5db;
+  --theme-card-bg: rgba(255, 255, 255, 0.6);
+  --theme-outline: rgba(209, 213, 219, 0.9);
   --theme-chart-line: var(--dracula-pink);
   --theme-chart-grid: #e5e7eb;
+  --theme-surface-solid: var(--theme-surface-solid-light);
 
   background-color: var(--theme-bg);
+  background-image: radial-gradient(circle at top left, var(--dracula-purple), transparent 50%), radial-gradient(circle at bottom right, var(--dracula-pink), transparent 50%);
   color: var(--theme-text);
 
   --md-sys-color-primary: var(--theme-primary);
@@ -45,10 +49,11 @@ body {
   --theme-primary: var(--dracula-purple);
   --theme-primary-text: var(--dracula-background);
   --theme-secondary: var(--dracula-pink);
-  --theme-card-bg: var(--dracula-current-line);
-  --theme-outline: var(--dracula-comment);
+  --theme-card-bg: rgba(68, 71, 90, 0.3);
+  --theme-outline: rgba(98, 114, 164, 0.5);
   --theme-chart-line: var(--dracula-pink);
   --theme-chart-grid: var(--dracula-current-line);
+  --theme-surface-solid: var(--theme-surface-solid-dark);
 
   background-color: var(--theme-bg);
   color: var(--theme-text);
@@ -63,4 +68,9 @@ body {
   --md-sys-color-on-surface-variant: var(--dracula-comment);
   --md-sys-color-secondary-container: var(--dracula-background);
   --md-sys-color-on-secondary-container: var(--dracula-purple);
+}
+
+md-menu,
+md-outlined-select::part(menu) {
+  --md-menu-container-color: var(--theme-surface-solid);
 }

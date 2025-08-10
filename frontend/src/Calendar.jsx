@@ -13,7 +13,6 @@ import "@material/web/textfield/outlined-text-field.js";
 const Calendar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    // Destructure `mode` from the context to check the current mode
     const { mode, theme } = useContext(ThemeContext);
 
     const [logs, setLogs] = useState([]);
@@ -177,7 +176,6 @@ const Calendar = () => {
         return `${currentYear}`;
     }
 
-    // Conditional class for the background
     const calendarBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
 
     return (
@@ -187,10 +185,9 @@ const Calendar = () => {
                     <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
                 </md-icon-button>
             </div>
-            {/* The theme toggle button has been removed from here */}
 
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
-            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} backdrop-blur-lg`}>
                 <div className="p-6 flex flex-col h-full">
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
@@ -219,7 +216,7 @@ const Calendar = () => {
             </div>
 
             <main className="container mx-auto p-6 pt-20">
-                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] mb-8">
+                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] mb-8 backdrop-blur-lg">
                     <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
                         <div className="flex items-center gap-2">
                             <md-outlined-button onClick={handleGoToToday}>This {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}</md-outlined-button>

@@ -14,7 +14,6 @@ import { ThemeContext } from "./ThemeContext";
 const HealthChart = ({ data, metric }) => {
   const { theme } = useContext(ThemeContext);
 
-  // Define colors based on theme from CSS variables
   const colors = {
     light: {
       tick: 'var(--dracula-background)',
@@ -34,7 +33,7 @@ const HealthChart = ({ data, metric }) => {
   const currentColors = theme === 'dark' ? colors.dark : colors.light;
 
   return (
-    <div className="w-full h-96 bg-[var(--theme-card-bg)] rounded-xl p-4 border border-[var(--theme-outline)]">
+    <div className="w-full h-96 bg-[var(--theme-card-bg)] rounded-xl p-4 border border-[var(--theme-outline)] backdrop-blur-lg">
       <h2 className="text-xl font-bold mb-4 text-[var(--theme-text)] capitalize">
         {metric.replace("_", " ")} Over Time
       </h2>

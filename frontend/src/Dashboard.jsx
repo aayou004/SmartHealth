@@ -70,7 +70,6 @@ const Dashboard = () => {
         }
     };
 
-    // Conditional class for the background
     const dashboardBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
 
     return (
@@ -94,7 +93,7 @@ const Dashboard = () => {
             </div>
             
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
-            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} backdrop-blur-lg`}>
                 <div className="p-6 flex flex-col h-full">
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
@@ -124,26 +123,26 @@ const Dashboard = () => {
 
             <main className="container mx-auto p-6 pt-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Steps (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_steps}</p>
                     </div>
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                     <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Sleep (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_sleep}</p>
                     </div>
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Calories (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_calories}</p>
                     </div>
-                    <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)]">
+                     <div className="p-4 flex flex-col items-center justify-center bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
                         <h3 className="font-bold mb-2 text-[var(--theme-text)]">Avg. Active Mins (7d)</h3>
                         <p className="text-2xl font-semibold text-[var(--theme-primary)]">{summary.avg_active_minutes}</p>
                     </div>
                 </div>
 
                 {logs.length > 0 && (
-                    <div className="bg-[var(--theme-card-bg)] p-4 rounded-xl border border-[var(--theme-outline)]">
+                    <div className="bg-[var(--theme-card-bg)] p-4 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
                         <md-tabs aria-label="Select metric to display" onchange={(e) => setMetric(e.target.activeTab.id)}>
                             <md-primary-tab id="steps" active>Steps</md-primary-tab>
                             <md-primary-tab id="sleep_hours">Sleep</md-primary-tab>

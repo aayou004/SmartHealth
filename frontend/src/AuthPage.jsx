@@ -62,7 +62,7 @@ const AuthPage = () => {
                     </p>
                 </div>
 
-                <div className="w-full max-w-sm p-8 bg-[var(--theme-card-bg)] shadow-xl rounded-2xl border border-[var(--theme-outline)]">
+                <div className="w-full max-w-sm p-8 bg-[var(--theme-card-bg)] shadow-xl rounded-2xl border border-[var(--theme-outline)] backdrop-blur-lg">
                     <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">
                         {mode === "login" ? "Login" : "Register"}
                     </h2>

@@ -139,13 +139,11 @@ const UserProfile = () => {
         }
     };
 
-    // New function to handle profile deletion
     const handleDeleteProfile = async () => {
         if (window.confirm("Are you sure you want to delete your profile? This action cannot be undone.")) {
             try {
                 await axios.delete(`http://localhost:5000/api/profile/${user.user_id}`);
                 
-                // Clear user session and redirect
                 localStorage.removeItem("user");
                 localStorage.removeItem("mode");
                 localStorage.removeItem("theme");
@@ -182,7 +180,7 @@ const UserProfile = () => {
                 <md-outlined-button type="button" onClick={handleDeleteProfile} className="text-red-500 border-red-500">Delete Profile</md-outlined-button>
             </div>
             {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
-            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} backdrop-blur-lg`}>
                 <div className="p-6 flex flex-col h-full">
                     <div className="mt-16 mb-8">
                         <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
@@ -211,7 +209,7 @@ const UserProfile = () => {
             </div>
 
             <main className="container mx-auto p-6 pt-20">
-                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)]">
+                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
                     <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">User Profile</h2>
                     
                     <BackgroundSettings />
