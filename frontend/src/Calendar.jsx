@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import { motion } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/icon/icon.js";
@@ -221,9 +222,15 @@ const Calendar = () => {
                     <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] mb-8 backdrop-blur-lg">
                         <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
                             <div className="flex items-center gap-2">
-                                <md-outlined-button onClick={handleGoToToday}>This {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}</md-outlined-button>
-                                <md-icon-button onClick={handlePrev}><md-icon>chevron_left</md-icon></md-icon-button>
-                                <md-icon-button onClick={handleNext}><md-icon>chevron_right</md-icon></md-icon-button>
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <md-outlined-button onClick={handleGoToToday}>This {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}</md-outlined-button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                    <md-icon-button onClick={handlePrev}><md-icon>chevron_left</md-icon></md-icon-button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                    <md-icon-button onClick={handleNext}><md-icon>chevron_right</md-icon></md-icon-button>
+                                </motion.div>
                                 <h2 className="text-xl md:text-2xl font-bold text-[var(--theme-text)]">{getHeaderText()}</h2>
                             </div>
                             <div className="flex items-center gap-4">

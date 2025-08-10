@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ThemeContext } from "./ThemeContext";
+import { motion } from "framer-motion";
 import "@material/web/textfield/outlined-text-field.js";
 import "@material/web/button/filled-button.js";
 import "@material/web/icon/icon.js";
@@ -77,30 +78,36 @@ const AuthPage = () => {
                             onInput={(e) => setPassword(e.target.value)}
                             required
                         ></md-outlined-text-field>
-                        <md-filled-button type="submit" class="w-full">
-                            {mode === "login" ? "Login" : "Register"}
-                        </md-filled-button>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <md-filled-button type="submit" class="w-full">
+                                {mode === "login" ? "Login" : "Register"}
+                            </md-filled-button>
+                        </motion.div>
                     </form>
 
                     {mode === "login" ? (
                         <p className="mt-6 text-center text-sm text-[var(--theme-text)] opacity-80">
                             Don't have an account?{" "}
-                            <button
+                            <motion.button
                                 onClick={() => switchMode("register")}
                                 className="font-semibold text-[var(--theme-primary)] hover:underline"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                             >
                                 Register
-                            </button>
+                            </motion.button>
                         </p>
                     ) : (
                         <p className="mt-6 text-center text-sm text-[var(--theme-text)] opacity-80">
                             Already have an account?{" "}
-                            <button
+                            <motion.button
                                 onClick={() => switchMode("login")}
                                 className="font-semibold text-[var(--theme-primary)] hover:underline"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                             >
                                 Log In
-                            </button>
+                            </motion.button>
                         </p>
                     )}
 

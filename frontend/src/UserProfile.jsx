@@ -232,9 +232,11 @@ const UserProfile = () => {
                                     )}
                                 </div>
                                 <div className="absolute top-1 right-1">
-                                    <md-icon-button id="edit-anchor" className="bg-black/20 dark:bg-white/20 rounded-full" onClick={() => setMenuOpen(prev => !prev)}>
-                                        <md-icon>edit</md-icon>
-                                    </md-icon-button>
+                                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                        <md-icon-button id="edit-anchor" className="bg-black/20 dark:bg-white/20 rounded-full" onClick={() => setMenuOpen(prev => !prev)}>
+                                            <md-icon>edit</md-icon>
+                                        </md-icon-button>
+                                    </motion.div>
                                     <md-menu 
                                         anchor="edit-anchor" 
                                         open={isMenuOpen} 
@@ -334,8 +336,12 @@ const UserProfile = () => {
                             </AccordionCategory>
                         </form>
                         <div className="mt-6 flex justify-end gap-4">
-                            <md-outlined-button type="button" onClick={handleExport}>Export to CSV</md-outlined-button>
-                            <md-filled-button type="button" onClick={handleProfileUpdate}>Save Changes</md-filled-button>
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <md-outlined-button type="button" onClick={handleExport}>Export to CSV</md-outlined-button>
+                            </motion.div>
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <md-filled-button type="button" onClick={handleProfileUpdate}>Save Changes</md-filled-button>
+                            </motion.div>
                         </div>
                         {message && <p className="mt-4 text-center text-green-500 opacity-90">{message}</p>}
                     </div>

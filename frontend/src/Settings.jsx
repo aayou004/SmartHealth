@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import { motion } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/button/text-button.js";
@@ -161,12 +162,16 @@ const Settings = () => {
                                             className="hidden"
                                             onChange={handleImageUpload}
                                         />
-                                        <md-outlined-button onClick={() => fileInputRef.current.click()}>
-                                            Upload Image
-                                        </md-outlined-button>
-                                        <md-outlined-button onClick={handleClearBackground} disabled={!backgroundImage}>
-                                            Delete Image
-                                        </md-outlined-button>
+                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                            <md-outlined-button onClick={() => fileInputRef.current.click()}>
+                                                Upload Image
+                                            </md-outlined-button>
+                                        </motion.div>
+                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                            <md-outlined-button onClick={handleClearBackground} disabled={!backgroundImage}>
+                                                Delete Image
+                                            </md-outlined-button>
+                                        </motion.div>
                                     </div>
                                 </div>
                                 <div className="h-96 rounded-lg border-2 border-[var(--theme-outline)] flex items-center justify-center bg-black/5 text-[var(--theme-text)]/70">
@@ -181,9 +186,11 @@ const Settings = () => {
                             <div className="p-4 rounded-lg border border-[var(--theme-outline)]">
                                 <div className="flex items-center justify-between">
                                     <span className="font-semibold text-[var(--theme-text)]">Account</span>
-                                    <md-outlined-button onClick={handleDeleteProfile}>
-                                        Delete Profile
-                                    </md-outlined-button>
+                                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                        <md-outlined-button onClick={handleDeleteProfile}>
+                                            Delete Profile
+                                        </md-outlined-button>
+                                    </motion.div>
                                 </div>
                             </div>
                             {message && <p className="mt-4 text-center text-green-500 opacity-90">{message}</p>}

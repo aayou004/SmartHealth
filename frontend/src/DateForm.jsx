@@ -227,9 +227,11 @@ const DateForm = () => {
                                 <FormField label="Workout Intensity" description="Rate workout intensity on a scale of 1 to 5.">
                                     <div className="flex gap-2">
                                         {[1, 2, 3, 4, 5].map(val => (
-                                             <md-icon-button key={val} type="button" onClick={() => handleRatingChange('workout_intensity', val)} className={`${(logData.workout_intensity || 0) < val ? 'opacity-40' : ''}`}>
-                                                 <md-icon>star</md-icon>
-                                             </md-icon-button>
+                                            <motion.div key={val} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}>
+                                                 <md-icon-button type="button" onClick={() => handleRatingChange('workout_intensity', val)} className={`${(logData.workout_intensity || 0) < val ? 'opacity-40' : ''}`}>
+                                                     <md-icon>star</md-icon>
+                                                 </md-icon-button>
+                                             </motion.div>
                                          ))}
                                      </div>
                                 </FormField>
@@ -257,18 +259,22 @@ const DateForm = () => {
                                  <FormField label="Mood" description="Rate your overall mood on a scale of 1 to 5.">
                                     <div className="flex gap-2">
                                          {[1, 2, 3, 4, 5].map(val => (
-                                             <md-icon-button key={val} type="button" onClick={() => handleRatingChange('mood', val)} className={`${(logData.mood || 0) < val ? 'opacity-40' : ''}`}>
-                                                 <md-icon>sentiment_satisfied</md-icon>
-                                             </md-icon-button>
+                                             <motion.div key={val} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}>
+                                                 <md-icon-button type="button" onClick={() => handleRatingChange('mood', val)} className={`${(logData.mood || 0) < val ? 'opacity-40' : ''}`}>
+                                                     <md-icon>sentiment_satisfied</md-icon>
+                                                 </md-icon-button>
+                                             </motion.div>
                                          ))}
                                      </div>
                                 </FormField>
                                 <FormField label="Stress Level" description="Rate your stress level on a scale of 1 to 5.">
                                     <div className="flex gap-2">
                                          {[1, 2, 3, 4, 5].map(val => (
-                                             <md-icon-button key={val} type="button" onClick={() => handleRatingChange('stress_level', val)} className={`${(logData.stress_level || 0) < val ? 'opacity-40' : ''}`}>
-                                                 <md-icon>battery_alert</md-icon>
-                                             </md-icon-button>
+                                             <motion.div key={val} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}>
+                                                 <md-icon-button type="button" onClick={() => handleRatingChange('stress_level', val)} className={`${(logData.stress_level || 0) < val ? 'opacity-40' : ''}`}>
+                                                     <md-icon>battery_alert</md-icon>
+                                                 </md-icon-button>
+                                             </motion.div>
                                          ))}
                                      </div>
                                 </FormField>
@@ -290,8 +296,12 @@ const DateForm = () => {
                             </AccordionCategory>
                         </form>
                         <div className="mt-6 flex justify-end gap-4">
-                            <md-outlined-button onClick={handleBackToCalendar}>Back to Calendar</md-outlined-button>
-                            <md-filled-button type="button" onClick={() => document.getElementById('log-form')?.requestSubmit()}>Save Entry</md-filled-button>
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <md-outlined-button onClick={handleBackToCalendar}>Back to Calendar</md-outlined-button>
+                            </motion.div>
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <md-filled-button type="button" onClick={() => document.getElementById('log-form')?.requestSubmit()}>Save Entry</md-filled-button>
+                            </motion.div>
                         </div>
                         {message && <p className="mt-4 text-center text-green-500 opacity-90">{message}</p>}
                     </div>
