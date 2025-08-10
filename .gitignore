@@ -29,3 +29,4 @@ yarn-error.log*
 
 /backend/health.db
 /backend/uploads
+/backend/scripts

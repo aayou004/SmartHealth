@@ -1,38 +1,54 @@
-// src/ThemeContext.jsx
 import React, { createContext, useState, useEffect } from 'react';
 
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [mode, setMode] = useState(localStorage.getItem('mode') || 'light');
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [backgroundImage, setBackgroundImage] = useState(
     localStorage.getItem('backgroundImage') || ''
   );
+  const [isSidebarOpen, setSidebarOpen] = useState(JSON.parse(localStorage.getItem('sidebarOpen')) !== false);
 
   useEffect(() => {
-    // Apply the theme class to the document based on the current theme state
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    // Save both the mode and theme to local storage
-    localStorage.setItem('mode', mode);
     localStorage.setItem('theme', theme);
-  }, [mode, theme]);
+  }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('backgroundImage', backgroundImage);
-  }, [backgroundImage]);
+    localStorage.setItem('sidebarOpen', isSidebarOpen);
+  }, [isSidebarOpen]);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.user_id) {
+      fetch(`http://localhost:5000/api/profile/${user.user_id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.background_image) {
+            setBackgroundImage(`http://localhost:5000/${data.background_image}`);
+          } else {
+            setBackgroundImage('');
+          }
+        })
+        .catch(err => console.error("Failed to fetch background", err));
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => !prev);
+  };
 
   const value = {
-    mode,
-    setMode,
     theme,
     setTheme,
     backgroundImage,
     setBackgroundImage,
+    isSidebarOpen,
+    toggleSidebar,
   };
 
   return (

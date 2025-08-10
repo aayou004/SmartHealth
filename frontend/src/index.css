@@ -28,7 +28,6 @@ body {
   --theme-surface-solid: var(--theme-surface-solid-light);
 
   background-color: var(--theme-bg);
-  background-image: radial-gradient(circle at top left, var(--dracula-purple), transparent 50%), radial-gradient(circle at bottom right, var(--dracula-pink), transparent 50%);
   color: var(--theme-text);
 
   --md-sys-color-primary: var(--theme-primary);

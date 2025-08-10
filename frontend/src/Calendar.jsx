@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import { motion } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/icon/icon.js";
@@ -13,11 +14,10 @@ import "@material/web/textfield/outlined-text-field.js";
 const Calendar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { mode, theme } = useContext(ThemeContext);
+    const { isSidebarOpen, toggleSidebar } = useContext(ThemeContext);
 
     const [logs, setLogs] = useState([]);
-    const [isSidebarOpen, setSidebarOpen] = useState(false);
-    const [viewMode, setViewMode] = useState(location.state?.viewMode || "week");
+    const [viewMode, setViewMode] = useState(localStorage.getItem('calendarViewMode') || location.state?.viewMode || "month");
     const [currentDate, setCurrentDate] = useState(
         location.state?.currentDate ? new Date(location.state.currentDate) : new Date()
     );
@@ -36,6 +36,10 @@ const Calendar = () => {
         }
         fetchData();
     }, [user.user_id, navigate]);
+
+    useEffect(() => {
+        localStorage.setItem('calendarViewMode', viewMode);
+    }, [viewMode]);
 
     const fetchData = async () => {
         try {
@@ -77,7 +81,6 @@ const Calendar = () => {
         localStorage.removeItem("user");
         navigate("/");
     };
-    const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     const renderDayCell = (date) => {
         const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -176,148 +179,155 @@ const Calendar = () => {
         return `${currentYear}`;
     }
 
-    const calendarBgClass = mode === 'custom' ? 'bg-transparent' : 'bg-[var(--theme-bg)]';
-
     return (
-        <div className={`relative ${calendarBgClass} min-h-screen transition-colors duration-300`}>
-            <div className="absolute top-0 left-0 p-4 z-40">
-                <md-icon-button onClick={toggleSidebar}>
-                    <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
-                </md-icon-button>
-            </div>
-
-            {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={toggleSidebar}></div>}
-            <div className={`fixed top-0 left-0 h-full bg-[var(--theme-card-bg)] w-64 z-30 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} backdrop-blur-lg`}>
-                <div className="p-6 flex flex-col h-full">
-                    <div className="mt-16 mb-8">
-                        <h1 className="text-2xl font-bold text-[var(--theme-primary)]">SmartHealth</h1>
+        <div className="flex h-screen bg-transparent">
+            <div className={`bg-[var(--theme-card-bg)] backdrop-blur-lg transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'} flex flex-col`}>
+                <div className="p-4">
+                    <div
+                        className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`}
+                        onClick={toggleSidebar}
+                    >
+                        <md-icon>menu</md-icon>
+                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>SmartHealth</span>
                     </div>
-                    <nav className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                            <md-icon>dashboard</md-icon>
-                            <span className="text-[var(--theme-text)]">Dashboard</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/calendar')}>
-                            <md-icon>calendar_month</md-icon>
-                            <span className="text-[var(--theme-text)]">Calendar</span>
-                        </div>
-                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
-                            <md-icon>person</md-icon>
-                            <span className="text-[var(--theme-text)]">Profile</span>
-                        </div>
-                    </nav>
-                    <nav className="flex flex-col gap-4 mt-auto">
-                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={handleLogout}>
-                            <md-icon>logout</md-icon>
-                            <span className="text-[var(--theme-text)]">Log Out</span>
-                        </div>
-                    </nav>
                 </div>
+                <nav className="flex flex-col gap-4 p-4 flex-grow">
+                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/dashboard')}>
+                        <md-icon>dashboard</md-icon>
+                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Dashboard</span>
+                    </div>
+                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/calendar')}>
+                        <md-icon>calendar_month</md-icon>
+                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Calendar</span>
+                    </div>
+                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/profile')}>
+                        <md-icon>person</md-icon>
+                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Profile</span>
+                    </div>
+                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/settings')}>
+                        <md-icon>settings</md-icon>
+                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Settings</span>
+                    </div>
+                </nav>
+                <nav className="flex flex-col gap-4 p-4">
+                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={handleLogout}>
+                        <md-icon>logout</md-icon>
+                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Log Out</span>
+                    </div>
+                </nav>
             </div>
 
-            <main className="container mx-auto p-6 pt-20">
-                <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] mb-8 backdrop-blur-lg">
-                    <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-                        <div className="flex items-center gap-2">
-                            <md-outlined-button onClick={handleGoToToday}>This {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}</md-outlined-button>
-                            <md-icon-button onClick={handlePrev}><md-icon>chevron_left</md-icon></md-icon-button>
-                            <md-icon-button onClick={handleNext}><md-icon>chevron_right</md-icon></md-icon-button>
-                            <h2 className="text-xl md:text-2xl font-bold text-[var(--theme-text)]">{getHeaderText()}</h2>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <md-outlined-select label="View" value={viewMode} onchange={e => setViewMode(e.target.value)}>
-                                <md-select-option value="week">Week</md-select-option>
-                                <md-select-option value="month">Month</md-select-option>
-                                <md-select-option value="year">Year</md-select-option>
-                            </md-outlined-select>
-                        </div>
-                    </div>
-
-                    {viewMode === 'week' && (
-                        <div>
-                            <div className="grid grid-cols-7 gap-2 mb-2">
-                                {dayAbbreviations.map(day => <div key={day} className="text-center font-bold text-sm text-[var(--theme-text)] opacity-70">{day}</div>)}
+            <div className="flex-1 flex flex-col overflow-y-auto">
+                <main className="container mx-auto px-6 pt-4 pb-6">
+                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] mb-8 backdrop-blur-lg">
+                        <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                            <div className="flex items-center gap-2">
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <md-outlined-button onClick={handleGoToToday}>This {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}</md-outlined-button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                    <md-icon-button onClick={handlePrev}><md-icon>chevron_left</md-icon></md-icon-button>
+                                </motion.div>
+                                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                    <md-icon-button onClick={handleNext}><md-icon>chevron_right</md-icon></md-icon-button>
+                                </motion.div>
+                                <h2 className="text-xl md:text-2xl font-bold text-[var(--theme-text)]">{getHeaderText()}</h2>
                             </div>
-                            <div className="grid grid-cols-7 gap-2">
-                                {Array.from({ length: 7 }).map((_, i) => {
-                                    const day = getStartOfWeek(currentDate);
-                                    day.setDate(day.getDate() + i);
-                                    return renderDayCell(day)
-                                })}
+                            <div className="flex items-center gap-4">
+                                <md-outlined-select label="View" value={viewMode} onchange={e => setViewMode(e.target.value)}>
+                                    <md-select-option value="week">Week</md-select-option>
+                                    <md-select-option value="month">Month</md-select-option>
+                                    <md-select-option value="year">Year</md-select-option>
+                                </md-outlined-select>
                             </div>
                         </div>
-                    )}
-                    {viewMode === 'month' && (() => {
-                        const firstDayOfMonth = getFirstDayOfMonth(currentYear, currentMonth);
-                        const daysInMonth = getDaysInMonth(currentYear, currentMonth);
-                        const totalFilledCells = firstDayOfMonth + daysInMonth;
-                        const emptyEndCellsCount = (7 - (totalFilledCells % 7)) % 7;
 
-                        return (
+                        {viewMode === 'week' && (
                             <div>
                                 <div className="grid grid-cols-7 gap-2 mb-2">
                                     {dayAbbreviations.map(day => <div key={day} className="text-center font-bold text-sm text-[var(--theme-text)] opacity-70">{day}</div>)}
                                 </div>
                                 <div className="grid grid-cols-7 gap-2">
-                                    {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-start-${i}`} className="aspect-square rounded-lg bg-black/5 dark:bg-white/5"></div>)}
-                                    {Array.from({ length: daysInMonth }).map((_, day) => renderDayCell(new Date(currentYear, currentMonth, day + 1)))}
-                                    {Array.from({ length: emptyEndCellsCount }).map((_, i) => <div key={`empty-end-${i}`} className="aspect-square rounded-lg bg-black/5 dark:bg-white/5"></div>)}
+                                    {Array.from({ length: 7 }).map((_, i) => {
+                                        const day = getStartOfWeek(currentDate);
+                                        day.setDate(day.getDate() + i);
+                                        return renderDayCell(day)
+                                    })}
                                 </div>
                             </div>
-                        );
-                    })()}
-                    {viewMode === 'year' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
-                            {monthNames.map((monthName, monthIndex) => {
-                                const firstDayOfMonth = getFirstDayOfMonth(currentYear, monthIndex);
-                                const daysInMonth = getDaysInMonth(currentYear, monthIndex);
-                                const monthGrid = [];
+                        )}
+                        {viewMode === 'month' && (() => {
+                            const firstDayOfMonth = getFirstDayOfMonth(currentYear, currentMonth);
+                            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+                            const totalFilledCells = firstDayOfMonth + daysInMonth;
+                            const emptyEndCellsCount = (7 - (totalFilledCells % 7)) % 7;
 
-                                const prevMonthIndex = monthIndex === 0 ? 11 : monthIndex - 1;
-                                const prevMonthYear = monthIndex === 0 ? currentYear - 1 : currentYear;
-                                const daysInPrevMonth = getDaysInMonth(prevMonthYear, prevMonthIndex);
-                                for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-                                    monthGrid.push({
-                                        date: new Date(prevMonthYear, prevMonthIndex, daysInPrevMonth - i),
-                                        isCurrentMonth: false
-                                    });
-                                }
-
-                                for (let i = 1; i <= daysInMonth; i++) {
-                                    monthGrid.push({
-                                        date: new Date(currentYear, monthIndex, i),
-                                        isCurrentMonth: true
-                                    });
-                                }
-
-                                const nextMonthIndex = monthIndex === 11 ? 0 : monthIndex + 1;
-                                const nextMonthYear = monthIndex === 11 ? currentYear + 1 : currentYear;
-                                const remainingCells = 42 - monthGrid.length;
-                                for (let i = 1; i <= remainingCells; i++) {
-                                    monthGrid.push({
-                                        date: new Date(nextMonthYear, nextMonthIndex, i),
-                                        isCurrentMonth: false
-                                    });
-                                }
-
-                                return (
-                                    <div key={monthIndex}>
-                                        <h3 className="text-lg font-semibold text-center mb-2 text-[var(--theme-text)]">{monthName}</h3>
-                                        <div className="grid grid-cols-7 gap-y-1 text-center justify-items-center">
-                                            {dayAbbreviations.map(day => (
-                                                <div key={day} className="text-xs font-bold text-[var(--theme-text)] opacity-50">{day.slice(0, 1)}</div>
-                                            ))}
-                                            {monthGrid.map(({ date, isCurrentMonth }) => (
-                                                renderYearViewDayCell(date, isCurrentMonth)
-                                            ))}
-                                        </div>
+                            return (
+                                <div>
+                                    <div className="grid grid-cols-7 gap-2 mb-2">
+                                        {dayAbbreviations.map(day => <div key={day} className="text-center font-bold text-sm text-[var(--theme-text)] opacity-70">{day}</div>)}
                                     </div>
-                                )
-                            })}
-                        </div>
-                    )}
-                </div>
-            </main>
+                                    <div className="grid grid-cols-7 gap-2">
+                                        {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-start-${i}`} className="aspect-square rounded-lg bg-black/5 dark:bg-white/5"></div>)}
+                                        {Array.from({ length: daysInMonth }).map((_, day) => renderDayCell(new Date(currentYear, currentMonth, day + 1)))}
+                                        {Array.from({ length: emptyEndCellsCount }).map((_, i) => <div key={`empty-end-${i}`} className="aspect-square rounded-lg bg-black/5 dark:bg-white/5"></div>)}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                        {viewMode === 'year' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
+                                {monthNames.map((monthName, monthIndex) => {
+                                    const firstDayOfMonth = getFirstDayOfMonth(currentYear, monthIndex);
+                                    const daysInMonth = getDaysInMonth(currentYear, monthIndex);
+                                    const monthGrid = [];
+
+                                    const prevMonthIndex = monthIndex === 0 ? 11 : monthIndex - 1;
+                                    const prevMonthYear = monthIndex === 0 ? currentYear - 1 : currentYear;
+                                    const daysInPrevMonth = getDaysInMonth(prevMonthYear, prevMonthIndex);
+                                    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+                                        monthGrid.push({
+                                            date: new Date(prevMonthYear, prevMonthIndex, daysInPrevMonth - i),
+                                            isCurrentMonth: false
+                                        });
+                                    }
+
+                                    for (let i = 1; i <= daysInMonth; i++) {
+                                        monthGrid.push({
+                                            date: new Date(currentYear, monthIndex, i),
+                                            isCurrentMonth: true
+                                        });
+                                    }
+
+                                    const nextMonthIndex = monthIndex === 11 ? 0 : monthIndex + 1;
+                                    const nextMonthYear = monthIndex === 11 ? currentYear + 1 : currentYear;
+                                    const remainingCells = 42 - monthGrid.length;
+                                    for (let i = 1; i <= remainingCells; i++) {
+                                        monthGrid.push({
+                                            date: new Date(nextMonthYear, nextMonthIndex, i),
+                                            isCurrentMonth: false
+                                        });
+                                    }
+
+                                    return (
+                                        <div key={monthIndex}>
+                                            <h3 className="text-lg font-semibold text-center mb-2 text-[var(--theme-text)]">{monthName}</h3>
+                                            <div className="grid grid-cols-7 gap-y-1 text-center justify-items-center">
+                                                {dayAbbreviations.map(day => (
+                                                    <div key={day} className="text-xs font-bold text-[var(--theme-text)] opacity-50">{day.slice(0, 1)}</div>
+                                                ))}
+                                                {monthGrid.map(({ date, isCurrentMonth }) => (
+                                                    renderYearViewDayCell(date, isCurrentMonth)
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };
