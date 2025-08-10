@@ -7,6 +7,7 @@ export const ThemeProvider = ({ children }) => {
   const [backgroundImage, setBackgroundImage] = useState(
     localStorage.getItem('backgroundImage') || ''
   );
+  const [isSidebarOpen, setSidebarOpen] = useState(JSON.parse(localStorage.getItem('sidebarOpen')) !== false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -16,6 +17,10 @@ export const ThemeProvider = ({ children }) => {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', isSidebarOpen);
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -37,11 +42,17 @@ export const ThemeProvider = ({ children }) => {
     setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => !prev);
+  };
+
   const value = {
     theme,
     toggleTheme,
     backgroundImage,
     setBackgroundImage,
+    isSidebarOpen,
+    toggleSidebar,
   };
 
   return (

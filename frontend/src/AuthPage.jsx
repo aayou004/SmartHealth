@@ -47,11 +47,6 @@ const AuthPage = () => {
 
     return (
         <div className="relative min-h-screen flex justify-center items-center bg-[var(--theme-bg)] transition-colors duration-300 p-4">
-            <div className="absolute top-0 right-0 p-4">
-                <md-icon-button onClick={toggleTheme}>
-                    <md-icon>{theme === "light" ? "dark_mode" : "light_mode"}</md-icon>
-                </md-icon-button>
-            </div>
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-4xl">
                 <div className="text-center">
                     <h1 className="text-6xl font-bold text-[var(--theme-text)]">
