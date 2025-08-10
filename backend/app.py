@@ -13,10 +13,14 @@ CORS(app)
 
 UPLOAD_FOLDER = 'uploads'
 PROFILE_PIC_FOLDER = os.path.join(UPLOAD_FOLDER, 'profile_pictures')
-app.config['UPLOAD_FOLDER'] = PROFILE_PIC_FOLDER
+BACKGROUND_FOLDER = os.path.join(UPLOAD_FOLDER, 'backgrounds')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['PROFILE_PIC_FOLDER'] = PROFILE_PIC_FOLDER
+app.config['BACKGROUND_FOLDER'] = BACKGROUND_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['PROFILE_PIC_FOLDER'], exist_ok=True)
+os.makedirs(app.config['BACKGROUND_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -42,7 +46,8 @@ def init_db():
             dietary_preferences TEXT,
             medical_conditions TEXT,
             allergies TEXT,
-            workout_preferences TEXT
+            workout_preferences TEXT,
+            background_image TEXT
         )
     """)
     cursor.execute('''
@@ -226,7 +231,7 @@ def user_profile(user_id):
             
             _, f_ext = os.path.splitext(file.filename)
             filename = secure_filename(f"{user_id}_{date.today().isoformat()}{f_ext}")
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            filepath = os.path.join(app.config['PROFILE_PIC_FOLDER'], filename)
             file.save(filepath)
             update_data['profile_picture'] = os.path.join('uploads/profile_pictures', filename).replace("\\", "/")
         elif remove_picture:
@@ -257,22 +262,24 @@ def user_profile(user_id):
             
     if request.method == 'DELETE':
         try:
-            c.execute("SELECT profile_picture FROM users WHERE id = ?", (user_id,))
+            c.execute("SELECT profile_picture, background_image FROM users WHERE id = ?", (user_id,))
             user_data = c.fetchone()
             if not user_data:
                 return jsonify({"error": "User not found"}), 404
 
-            # Delete profile picture file if it exists
             profile_picture_path = user_data['profile_picture']
             if profile_picture_path:
                 full_path = os.path.join('backend', profile_picture_path)
                 if os.path.exists(full_path):
                     os.remove(full_path)
 
-            # Delete health data associated with the user
-            c.execute("DELETE FROM health_data WHERE user_id = ?", (user_id,))
+            background_image_path = user_data['background_image']
+            if background_image_path:
+                full_path = os.path.join('backend', background_image_path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
 
-            # Delete the user itself
+            c.execute("DELETE FROM health_data WHERE user_id = ?", (user_id,))
             c.execute("DELETE FROM users WHERE id = ?", (user_id,))
             conn.commit()
 
@@ -283,9 +290,57 @@ def user_profile(user_id):
         finally:
             conn.close()
 
-@app.route('/uploads/profile_pictures/<path:filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+@app.route('/uploads/<folder>/<path:filename>')
+def uploaded_file(folder, filename):
+    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], folder), filename)
+
+@app.route('/api/background/<int:user_id>', methods=['POST'])
+def background_settings(user_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    file = request.files.get('background_image_file')
+    remove_background = request.form.get('remove_background_image') == 'true'
+
+    c.execute("SELECT background_image FROM users WHERE id = ?", (user_id,))
+    current_background_row = c.fetchone()
+    current_background_path = current_background_row[0] if current_background_row else None
+
+    update_data = {}
+
+    if file and allowed_file(file.filename):
+        if current_background_path:
+            full_path = os.path.join('backend', current_background_path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        
+        _, f_ext = os.path.splitext(file.filename)
+        filename = secure_filename(f"bg_{user_id}_{date.today().isoformat()}{f_ext}")
+        filepath = os.path.join(app.config['BACKGROUND_FOLDER'], filename)
+        file.save(filepath)
+        update_data['background_image'] = os.path.join('uploads/backgrounds', filename).replace("\\", "/")
+    elif remove_background:
+        if current_background_path:
+            full_path = os.path.join('backend', current_background_path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        update_data['background_image'] = None
+    
+    if not update_data:
+        conn.close()
+        return jsonify({"error": "No data provided to update"}), 400
+
+    try:
+        c.execute("UPDATE users SET background_image = ? WHERE id = ?", (update_data['background_image'], user_id))
+        conn.commit()
+        c.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        updated_profile = c.fetchone()
+        return jsonify({"message": "Background updated successfully", "profile": dict(updated_profile)}), 200
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 @app.route('/api/export/<int:user_id>', methods=['GET'])
 def export_csv(user_id):
@@ -303,7 +358,7 @@ def export_csv(user_id):
         output = io.StringIO()
         writer = csv.writer(output)
         
-        headers = [key for key in user_data.keys() if key not in ('id', 'password_hash', 'profile_picture')]
+        headers = [key for key in user_data.keys() if key not in ('id', 'password_hash', 'profile_picture', 'background_image')]
         writer.writerow(headers)
         
         writer.writerow([user_data[key] for key in headers])

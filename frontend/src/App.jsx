@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeContext } from "./ThemeContext.jsx";
@@ -9,31 +8,26 @@ import LogoutPage from "./LogoutPage";
 import Calendar from "./Calendar";
 import DateForm from "./DateForm";
 import UserProfile from "./UserProfile";
+import Settings from "./Settings";
 
 function App() {
-  const { mode, theme, backgroundImage } = useContext(ThemeContext);
+  const { theme, backgroundImage } = useContext(ThemeContext);
 
-  const isCustomMode = mode === 'custom';
-  
-  // Conditionally apply the background image style
-  const mainBgStyle = isCustomMode && backgroundImage ? {
+  const mainBgStyle = backgroundImage ? {
     backgroundImage: `url(${backgroundImage})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundAttachment: 'fixed',
   } : {};
 
+  const overlayClass = backgroundImage ? 'bg-gray-800/80' : '';
+
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${isCustomMode ? 'bg-transparent' : (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100')}`}
+      className={`min-h-screen transition-colors duration-300`}
       style={mainBgStyle}
     >
-      {/* Semi-transparent overlay only for custom mode */}
-      {isCustomMode && (
-        <div className={`absolute inset-0 z-0 bg-gray-800/80`}></div>
-      )}
-      
-      <div className="relative z-10">
+      <div className={`relative z-10 ${overlayClass}`}>
         <Router>
           <Routes>
             <Route path="/" element={<AuthPage />} />
@@ -41,6 +35,7 @@ function App() {
             <Route path="/calendar/:date" element={<DateForm />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/profile" element={<UserProfile />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/logout" element={<LogoutPage />} />
           </Routes>
         </Router>

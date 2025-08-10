@@ -128,7 +128,7 @@ const DateForm = () => {
     };
 
     return (
-        <div className="relative bg-[var(--theme-bg)] min-h-screen transition-colors duration-300">
+        <div className="relative bg-transparent min-h-screen transition-colors duration-300">
              <div className="absolute top-0 left-0 p-4 z-40">
                 <md-icon-button onClick={toggleSidebar}>
                     <md-icon>{isSidebarOpen ? "close" : "menu"}</md-icon>
@@ -160,6 +160,10 @@ const DateForm = () => {
                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/profile')}>
                             <md-icon>person</md-icon>
                             <span className="text-[var(--theme-text)]">Profile</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" onClick={() => navigate('/settings')}>
+                            <md-icon>settings</md-icon>
+                            <span className="text-[var(--theme-text)]">Settings</span>
                         </div>
                     </nav>
                     <nav className="flex flex-col gap-4 mt-auto">
