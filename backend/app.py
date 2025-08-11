@@ -7,6 +7,11 @@ import sqlite3
 from datetime import date
 import io
 import csv
+import requests
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -74,6 +79,25 @@ def init_db():
             symptoms TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
             UNIQUE(user_id, date)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (session_id) REFERENCES chat_sessions (id) ON DELETE CASCADE
         )
     ''')
     conn.commit()
@@ -178,8 +202,15 @@ def get_health_logs(user_id):
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
     try:
-        c.execute("SELECT * FROM health_data WHERE user_id = ? ORDER BY date ASC", (user_id,))
+        if start_date and end_date:
+            c.execute("SELECT * FROM health_data WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC", (user_id, start_date, end_date))
+        else:
+            c.execute("SELECT * FROM health_data WHERE user_id = ? ORDER BY date ASC", (user_id,))
+        
         rows = c.fetchall()
         logs = [dict(row) for row in rows]
         return jsonify(logs)
@@ -375,6 +406,144 @@ def export_csv(user_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/chats/<int:user_id>', methods=['GET', 'POST'])
+def handle_chats(user_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    if request.method == 'GET':
+        try:
+            c.execute("SELECT * FROM chat_sessions WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+            rows = c.fetchall()
+            sessions = [dict(row) for row in rows]
+            return jsonify(sessions)
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+    if request.method == 'POST':
+        data = request.json
+        title = data.get('title')
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+        try:
+            c.execute("INSERT INTO chat_sessions (user_id, title) VALUES (?, ?)", (user_id, title))
+            conn.commit()
+            return jsonify({"message": "Chat session created", "id": c.lastrowid}), 201
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/chats/<int:session_id>', methods=['DELETE'])
+def delete_chat(session_id):
+    conn = sqlite3.connect('health.db')
+    c = conn.cursor()
+    try:
+        c.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+        c.execute("DELETE FROM chat_sessions WHERE id = ?", (session_id,))
+        conn.commit()
+        return jsonify({"message": "Chat session deleted"}), 200
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/chats/<int:session_id>/messages', methods=['GET', 'POST'])
+def handle_messages(session_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    if request.method == 'GET':
+        try:
+            c.execute("SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC", (session_id,))
+            rows = c.fetchall()
+            messages = [dict(row) for row in rows]
+            return jsonify(messages)
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+    if request.method == 'POST':
+        data = request.json
+        role = data.get('role')
+        content = data.get('content')
+        if not role or not content:
+            return jsonify({"error": "Role and content are required"}), 400
+        try:
+            c.execute("INSERT INTO chat_messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
+            conn.commit()
+            return jsonify({"message": "Message added"}), 201
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/assistant/generate', methods=['POST'])
+def generate_gemini_response():
+    data = request.json
+    prompt = data.get('prompt')
+    api_key = os.getenv("GEMINI_API_KEY")
+    
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            return jsonify({"reply": result['candidates'][0]['content']['parts'][0]['text']})
+        else:
+            return jsonify({"error": "No content generated"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/assistant/title', methods=['POST'])
+def generate_title():
+    data = request.json
+    message = data.get('message')
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+
+    prompt = f"Summarize the following user message into a short title of 3 to 5 words. Do not include any other text, quotes, or conversational filler. Just provide the title.\n\nUser Message: \"{message}\"\n\nTitle:"
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            title = result['candidates'][0]['content']['parts'][0]['text'].strip().replace("\"", "")
+            return jsonify({"title": title})
+        else:
+            return jsonify({"error": "No title generated"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

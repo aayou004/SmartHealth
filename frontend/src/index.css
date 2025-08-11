@@ -73,3 +73,43 @@ md-menu,
 md-outlined-select::part(menu) {
   --md-menu-container-color: var(--theme-surface-solid);
 }
+
+.themed-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent;
+  width: 100%;
+}
+
+.themed-slider::-webkit-slider-runnable-track {
+  background-color: var(--theme-chart-line);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.themed-slider::-moz-range-track {
+  background-color: var(--theme-chart-line);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.themed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  background-color: var(--theme-chart-line);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--theme-card-bg);
+  cursor: pointer;
+}
+
+.themed-slider::-moz-range-thumb {
+  background-color: var(--theme-chart-line);
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--theme-card-bg);
+  cursor: pointer;
+}

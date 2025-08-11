@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import Sidebar from "./Sidebar";
+import { useOverflow } from "./useOverflow";
 import { motion } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
@@ -13,10 +15,12 @@ import "@material/web/select/select-option.js";
 
 const Settings = () => {
     const navigate = useNavigate();
-    const { theme, setTheme, backgroundImage, setBackgroundImage, isSidebarOpen, toggleSidebar } = useContext(ThemeContext);
+    const { theme, setTheme, backgroundImage, setBackgroundImage } = useContext(ThemeContext);
     const [message, setMessage] = useState("");
     const user = JSON.parse(localStorage.getItem("user"));
     const fileInputRef = useRef(null);
+    const scrollRef = useRef(null);
+    const isOverflowing = useOverflow(scrollRef);
 
     useEffect(() => {
         if (!user || !user.user_id) {
@@ -86,54 +90,14 @@ const Settings = () => {
             }
         }
     };
-    
-    const handleLogout = () => {
-        localStorage.removeItem("user");
-        navigate("/");
-    };
 
     return (
-        <>
-            <div className="flex h-screen bg-transparent">
-                <div className={`bg-[var(--theme-card-bg)] backdrop-blur-lg transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'} flex flex-col`}>
-                    <div className="p-4">
-                        <div
-                            className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`}
-                            onClick={toggleSidebar}
-                        >
-                            <md-icon>menu</md-icon>
-                            <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>SmartHealth</span>
-                        </div>
-                    </div>
-                    <nav className="flex flex-col gap-4 p-4 flex-grow">
-                        <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/dashboard')}>
-                            <md-icon>dashboard</md-icon>
-                            <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Dashboard</span>
-                        </div>
-                        <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/calendar')}>
-                            <md-icon>calendar_month</md-icon>
-                            <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Calendar</span>
-                        </div>
-                        <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/profile')}>
-                            <md-icon>person</md-icon>
-                            <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Profile</span>
-                        </div>
-                        <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/settings')}>
-                            <md-icon>settings</md-icon>
-                            <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Settings</span>
-                        </div>
-                    </nav>
-                    <nav className="flex flex-col gap-4 p-4">
-                        <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={handleLogout}>
-                            <md-icon>logout</md-icon>
-                            <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Log Out</span>
-                        </div>
-                    </nav>
-                </div>
-
-                <div className="flex-1 flex flex-col overflow-y-auto">
-                    <main className="container mx-auto px-6 pt-4 pb-6">
-                        <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
+        <div className="flex h-screen bg-transparent">
+            <Sidebar />
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <main className="container mx-auto px-6 pt-4 pb-6 flex-1 flex flex-col min-h-0">
+                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
+                        <div ref={scrollRef} className={`flex-1 overflow-y-auto ${isOverflowing ? 'pr-4' : ''}`}>
                             <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">Settings</h2>
                             
                             <div className="p-4 rounded-lg border border-[var(--theme-outline)] mb-8">
@@ -193,12 +157,12 @@ const Settings = () => {
                                     </motion.div>
                                 </div>
                             </div>
-                            {message && <p className="mt-4 text-center text-green-500 opacity-90">{message}</p>}
                         </div>
-                    </main>
-                </div>
+                        {message && <p className="mt-4 text-center text-green-500 opacity-90">{message}</p>}
+                    </div>
+                </main>
             </div>
-        </>
+        </div>
     );
 };
 

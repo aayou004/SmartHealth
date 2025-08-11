@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
+import Sidebar from "./Sidebar";
+import { useOverflow } from "./useOverflow";
 import { motion, AnimatePresence } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
@@ -12,39 +14,6 @@ import "@material/web/select/outlined-select.js";
 import "@material/web/select/select-option.js";
 import "@material/web/menu/menu.js";
 import "@material/web/menu/menu-item.js";
-
-const AccordionCategory = ({ title, children, initialOpen = false }) => {
-    const [isOpen, setIsOpen] = useState(initialOpen);
-    return (
-        <div>
-            <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center py-4 text-left">
-                <span className="text-xl font-semibold text-[var(--theme-text)]">{title}</span>
-                <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
-                    <md-icon>expand_more</md-icon>
-                </motion.div>
-            </button>
-            <AnimatePresence initial={false}>
-                {isOpen && (
-                    <motion.div
-                        key="content"
-                        initial="collapsed"
-                        animate="open"
-                        exit="collapsed"
-                        variants={{
-                            open: { opacity: 1, height: "auto" },
-                            collapsed: { opacity: 0, height: 0 }
-                        }}
-                        transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }}
-                    >
-                        <div className="pb-2 pt-2">
-                            {children}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
 
 const FormField = ({ label, children }) => (
     <div className="p-4 rounded-lg border border-[var(--theme-outline)] mb-4 flex items-center justify-between gap-4">
@@ -70,13 +39,14 @@ const TextAreaFormField = ({ label, description, children }) => (
 
 const UserProfile = () => {
     const navigate = useNavigate();
-    const { isSidebarOpen, toggleSidebar } = useContext(ThemeContext);
     const [profile, setProfile] = useState({});
     const [message, setMessage] = useState("");
     const user = JSON.parse(localStorage.getItem("user"));
     const [profilePictureFile, setProfilePictureFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [isMenuOpen, setMenuOpen] = useState(false);
+    const scrollRef = useRef(null);
+    const isOverflowing = useOverflow(scrollRef);
 
     useEffect(() => {
         if (!user || !user.user_id) {
@@ -170,108 +140,68 @@ const UserProfile = () => {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("user");
-        navigate("/");
-    };
-
     return (
         <div className="flex h-screen bg-transparent">
-            <div className={`bg-[var(--theme-card-bg)] backdrop-blur-lg transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'} flex flex-col`}>
-                <div className="p-4">
-                    <div
-                        className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`}
-                        onClick={toggleSidebar}
-                    >
-                        <md-icon>menu</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>SmartHealth</span>
-                    </div>
-                </div>
-                <nav className="flex flex-col gap-4 p-4 flex-grow">
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/dashboard')}>
-                        <md-icon>dashboard</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Dashboard</span>
-                    </div>
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/calendar')}>
-                        <md-icon>calendar_month</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Calendar</span>
-                    </div>
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/profile')}>
-                        <md-icon>person</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Profile</span>
-                    </div>
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/settings')}>
-                        <md-icon>settings</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Settings</span>
-                    </div>
-                </nav>
-                <nav className="flex flex-col gap-4 p-4">
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={handleLogout}>
-                        <md-icon>logout</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Log Out</span>
-                    </div>
-                </nav>
-            </div>
+            <Sidebar />
 
-            <div className="flex-1 flex flex-col overflow-y-auto">
-                <main className="container mx-auto px-6 pt-4 pb-6">
-                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
-                        <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">User Profile</h2>
-                        
-                        <div className="flex justify-center mb-6">
-                            <div className="relative">
-                                <div className="w-48 h-48 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                                    {previewUrl || profile.profile_picture ? (
-                                        <img 
-                                            src={previewUrl || `http://localhost:5000/${profile.profile_picture}?${new Date().getTime()}`}
-                                            alt="Profile"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <span className="text-gray-500">No Image</span>
-                                    )}
-                                </div>
-                                <div className="absolute top-1 right-1">
-                                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                                        <md-icon-button id="edit-anchor" className="bg-black/20 dark:bg-white/20 rounded-full" onClick={() => setMenuOpen(prev => !prev)}>
-                                            <md-icon>edit</md-icon>
-                                        </md-icon-button>
-                                    </motion.div>
-                                    <md-menu 
-                                        anchor="edit-anchor" 
-                                        open={isMenuOpen} 
-                                        onClosed={() => setMenuOpen(false)}
-                                        anchor-corner="start-start"
-                                        menu-corner="start-end"
-                                    >
-                                        {profile.profile_picture || previewUrl ? (
-                                            <>
-                                                <md-menu-item onClick={() => {document.getElementById('profile_picture_upload').click(); setMenuOpen(false);}}>
-                                                    <div slot="headline">Edit</div>
-                                                </md-menu-item>
-                                                <md-menu-item onClick={() => {handleRemovePicture(); setMenuOpen(false);}}>
-                                                    <div slot="headline">Remove</div>
-                                                </md-menu-item>
-                                            </>
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <main className="container mx-auto px-6 pt-4 pb-6 flex-1 flex flex-col min-h-0">
+                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
+                        <div ref={scrollRef} className={`flex-1 overflow-y-auto ${isOverflowing ? 'pr-4' : ''}`}>
+                            <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">User Profile</h2>
+                            <div className="flex justify-center mb-6">
+                                <div className="relative">
+                                    <div className="w-48 h-48 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                                        {previewUrl || profile.profile_picture ? (
+                                            <img 
+                                                src={previewUrl || `http://localhost:5000/${profile.profile_picture}?${new Date().getTime()}`}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                            />
                                         ) : (
-                                            <md-menu-item onClick={() => {document.getElementById('profile_picture_upload').click(); setMenuOpen(false);}}>
-                                                <div slot="headline">Upload</div>
-                                            </md-menu-item>
+                                            <span className="text-gray-500">No Image</span>
                                         )}
-                                    </md-menu>
+                                    </div>
+                                    <div className="absolute top-1 right-1">
+                                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                            <md-icon-button id="edit-anchor" className="bg-black/20 dark:bg-white/20 rounded-full" onClick={() => setMenuOpen(prev => !prev)}>
+                                                <md-icon>edit</md-icon>
+                                            </md-icon-button>
+                                        </motion.div>
+                                        <md-menu 
+                                            anchor="edit-anchor" 
+                                            open={isMenuOpen} 
+                                            onClosed={() => setMenuOpen(false)}
+                                            anchor-corner="start-start"
+                                            menu-corner="start-end"
+                                        >
+                                            {profile.profile_picture || previewUrl ? (
+                                                <>
+                                                    <md-menu-item onClick={() => {document.getElementById('profile_picture_upload').click(); setMenuOpen(false);}}>
+                                                        <div slot="headline">Edit</div>
+                                                    </md-menu-item>
+                                                    <md-menu-item onClick={() => {handleRemovePicture(); setMenuOpen(false);}}>
+                                                        <div slot="headline">Remove</div>
+                                                    </md-menu-item>
+                                                </>
+                                            ) : (
+                                                <md-menu-item onClick={() => {document.getElementById('profile_picture_upload').click(); setMenuOpen(false);}}>
+                                                    <div slot="headline">Upload</div>
+                                                </md-menu-item>
+                                            )}
+                                        </md-menu>
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        id="profile_picture_upload" 
+                                        accept=".jpg, .jpeg, .png"
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                    />
                                 </div>
-                                <input 
-                                    type="file" 
-                                    id="profile_picture_upload" 
-                                    accept=".jpg, .jpeg, .png"
-                                    onChange={handleFileChange}
-                                    className="hidden"
-                                />
                             </div>
-                        </div>
 
-                        <form id="profile-form" onSubmit={handleProfileUpdate}>
-                            <AccordionCategory title="Personal Information">
+                            <form id="profile-form" onSubmit={handleProfileUpdate}>
                                 <FormField label="Name">
                                     <md-outlined-text-field class="w-full max-w-xs" id="name" value={profile.name || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </FormField>
@@ -316,8 +246,6 @@ const UserProfile = () => {
                                         <md-select-option value="O-">O-</md-select-option>
                                     </md-outlined-select>
                                 </FormField>
-                            </AccordionCategory>
-                            <AccordionCategory title="Health & Lifestyle">
                                 <TextAreaFormField label="Primary Goals" description="List your main health and wellness objectives (e.g., lose weight, build muscle).">
                                     <md-outlined-text-field class="w-full resize-none" id="primary_goals" type="textarea" rows="3" value={profile.primary_goals || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </TextAreaFormField>
@@ -333,8 +261,8 @@ const UserProfile = () => {
                                 <TextAreaFormField label="Workout Preferences" description="List your preferred physical activities (e.g., running, yoga, team sports).">
                                     <md-outlined-text-field class="w-full resize-none" id="workout_preferences" type="textarea" rows="3" value={profile.workout_preferences || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </TextAreaFormField>
-                            </AccordionCategory>
-                        </form>
+                            </form>
+                        </div>
                         <div className="mt-6 flex justify-end gap-4">
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <md-outlined-button type="button" onClick={handleExport}>Export to CSV</md-outlined-button>
