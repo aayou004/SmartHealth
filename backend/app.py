@@ -4,7 +4,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import sqlite3
-from datetime import date
+from datetime import date, timedelta, datetime
 import io
 import csv
 import requests
@@ -204,9 +204,21 @@ def get_health_logs(user_id):
 
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    operation = request.args.get('operation')
+    metric = request.args.get('metric')
 
     try:
-        if start_date and end_date:
+        if operation and metric:
+            if operation.upper() in ['AVG', 'SUM', 'MIN', 'MAX']:
+                valid_metrics = ['steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake', 'protein', 'carbs', 'fat', 'active_minutes', 'workout_intensity', 'stress_level', 'mindful_minutes', 'heart_rate', 'weight']
+                if metric not in valid_metrics:
+                    return jsonify({"error": "Invalid metric"}), 400
+                
+                query = f"SELECT {operation.upper()}({metric}) as value FROM health_data WHERE user_id = ? AND date BETWEEN ? AND ?"
+                c.execute(query, (user_id, start_date, end_date))
+                result = c.fetchone()
+                return jsonify({"result": result['value'] if result else None})
+        elif start_date and end_date:
             c.execute("SELECT * FROM health_data WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC", (user_id, start_date, end_date))
         else:
             c.execute("SELECT * FROM health_data WHERE user_id = ? ORDER BY date ASC", (user_id,))
@@ -218,6 +230,53 @@ def get_health_logs(user_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/logs/specific', methods=['GET'])
+def get_specific_logs():
+    user_id = request.args.get('user_id')
+    metrics_str = request.args.get('metrics')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    if not all([user_id, metrics_str]):
+        return jsonify({"error": "Missing user_id or metrics"}), 400
+
+    metrics = metrics_str.split(',')
+    valid_metrics = ['steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake', 'protein', 'carbs', 'fat', 'active_minutes', 'workout_intensity', 'stress_level', 'mindful_minutes', 'heart_rate', 'weight', 'date', 'journal_entry', 'symptoms', 'workout_type']
+    
+    for metric in metrics:
+        if metric not in valid_metrics:
+            return jsonify({"error": f"Invalid metric: {metric}"}), 400
+
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    try:
+        if not (start_date and end_date):
+            c.execute("SELECT MAX(date) as max_date FROM health_data WHERE user_id = ?", (user_id,))
+            row = c.fetchone()
+            if not row or not row['max_date']:
+                return jsonify([]) 
+            
+            end_date_obj = datetime.strptime(row['max_date'], '%Y-%m-%d').date()
+            start_date_obj = end_date_obj - timedelta(days=29)
+            
+            start_date = start_date_obj.isoformat()
+            end_date = end_date_obj.isoformat()
+
+        query = f"SELECT date, {', '.join(metrics)} FROM health_data WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC"
+        params = (user_id, start_date, end_date)
+        
+        c.execute(query, params)
+        rows = c.fetchall()
+        logs = [dict(row) for row in rows]
+        return jsonify(logs)
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
 
 @app.route('/api/profile/<int:user_id>', methods=['GET', 'POST', 'DELETE'])
 def user_profile(user_id):
@@ -513,6 +572,113 @@ def generate_gemini_response():
             return jsonify({"error": "No content generated"}), 500
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/assistant/parse-dates', methods=['POST'])
+def parse_dates():
+    data = request.json
+    message = data.get('message')
+    api_key = os.getenv("GEMINI_API_KEY")
+    today = date.today().isoformat()
+
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+
+    prompt = f"Given the current date is {today}, analyze the following user message and extract a start and end date. The dates should be in YYYY-MM-DD format. If no specific date or range is mentioned, return null for both startDate and endDate. User Message: \"{message}\""
+    
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    schema = {
+        "type": "OBJECT",
+        "properties": {
+            "startDate": {"type": "STRING"},
+            "endDate": {"type": "STRING"}
+        }
+    }
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": schema
+        }
+    }
+
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            date_info_str = result['candidates'][0]['content']['parts'][0]['text']
+            date_info = json.loads(date_info_str)
+            return jsonify(date_info)
+        else:
+            return jsonify({'startDate': None, 'endDate': None})
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+    except json.JSONDecodeError:
+        return jsonify({"error": "Failed to decode AI response"}), 500
+
+@app.route('/api/assistant/parse-query', methods=['POST'])
+def parse_query():
+    data = request.json
+    message = data.get('message')
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+
+    prompt = f"""
+    Analyze the user's message to identify a requested calculation (average, total, min, max, difference) 
+    and the specific health metric(s) they are asking about from the following list: 
+    ['steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake', 'protein', 'carbs', 'fat', 
+    'active_minutes', 'workout_intensity', 'stress_level', 'mindful_minutes', 'heart_rate', 'weight', 'journal_entry', 'symptoms'].
+    
+    General terms like "feeling" should map to ['mood', 'stress_level', 'journal_entry', 'symptoms'].
+    Terms like "activity" or "exercise" should map to ['steps', 'active_minutes', 'workout_type', 'workout_intensity'].
+    Terms like "diet" or "nutrition" should map to ['calorie_intake', 'protein', 'carbs', 'fat', 'water_glasses'].
+
+    Return a JSON object with 'operation' (one of 'avg', 'sum', 'min', 'max', 'diff', or null) 
+    and 'metrics' (an array of one or more valid metric strings).
+    If no specific operation or metric is found, return null for that field.
+
+    User Message: "{message}"
+    """
+    
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    schema = {
+        "type": "OBJECT",
+        "properties": {
+            "operation": {"type": "STRING", "nullable": True},
+            "metrics": {"type": "ARRAY", "items": {"type": "STRING"}, "nullable": True}
+        }
+    }
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": schema
+        }
+    }
+
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            query_info_str = result['candidates'][0]['content']['parts'][0]['text']
+            query_info = json.loads(query_info_str)
+            return jsonify(query_info)
+        else:
+            return jsonify({'operation': None, 'metrics': None})
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+    except json.JSONDecodeError:
+        return jsonify({"error": "Failed to decode AI response"}), 500
+
 
 @app.route('/api/assistant/title', methods=['POST'])
 def generate_title():

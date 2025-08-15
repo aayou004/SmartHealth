@@ -82,13 +82,13 @@ md-outlined-select::part(menu) {
 }
 
 .themed-slider::-webkit-slider-runnable-track {
-  background-color: var(--theme-chart-line);
+  background: linear-gradient(to right, var(--theme-chart-line) var(--slider-percentage, 0%), var(--theme-outline) var(--slider-percentage, 0%));
   height: 4px;
   border-radius: 2px;
 }
 
 .themed-slider::-moz-range-track {
-  background-color: var(--theme-chart-line);
+  background: linear-gradient(to right, var(--theme-chart-line) var(--slider-percentage, 0%), var(--theme-outline) var(--slider-percentage, 0%));
   height: 4px;
   border-radius: 2px;
 }
@@ -112,4 +112,32 @@ md-outlined-select::part(menu) {
   border-radius: 50%;
   border: 2px solid var(--theme-card-bg);
   cursor: pointer;
+}
+
+.fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+.fullscreen-chart {
+  width: 90vw;
+  height: 90vh;
+  z-index: 50;
+}
+
+.chat-message p {
+  margin: 0;
+}
+
+.chat-message strong {
+  font-weight: 600;
 }

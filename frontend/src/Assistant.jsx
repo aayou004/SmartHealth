@@ -5,6 +5,7 @@ import { ThemeContext } from "./ThemeContext";
 import Sidebar from "./Sidebar";
 import { useOverflow } from "./useOverflow";
 import { motion } from "framer-motion";
+import ReactMarkdown from 'react-markdown';
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/icon/icon.js";
@@ -79,34 +80,6 @@ const Assistant = () => {
         }
     };
 
-    const parseDatesFromInput = (text) => {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        if (/yesterday/i.test(text)) {
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            return { startDate: yesterday, endDate: yesterday };
-        }
-        if (/last week/i.test(text)) {
-            const endDate = new Date(today);
-            endDate.setDate(today.getDate() - today.getDay());
-            const startDate = new Date(endDate);
-            startDate.setDate(endDate.getDate() - 6);
-            return { startDate, endDate };
-        }
-        const monthMatch = text.match(/(january|february|march|april|may|june|july|august|september|october|november|december)/i);
-        if (monthMatch) {
-            const month = new Date(Date.parse(monthMatch[0] +" 1, 2024")).getMonth();
-            const year = today.getFullYear();
-            const startDate = new Date(year, month, 1);
-            const endDate = new Date(year, month + 1, 0);
-            return { startDate, endDate };
-        }
-
-        return null;
-    };
-
     const handleSendMessage = async () => {
         if (!input.trim() || isLoading) return;
 
@@ -128,35 +101,70 @@ const Assistant = () => {
 
             await axios.post(`http://localhost:5000/api/chats/${sessionId}/messages`, userMessage);
 
-            const profileRes = await axios.get(`http://localhost:5000/api/profile/${user.user_id}`);
-            const dateRange = parseDatesFromInput(input);
-            let logs = [];
-            if (dateRange) {
-                const { startDate, endDate } = dateRange;
-                const logsRes = await axios.get(`http://localhost:5000/api/logs/${user.user_id}`, {
+            const queryRes = await axios.post('http://localhost:5000/api/assistant/parse-query', { message: input });
+            const queryInfo = queryRes.data;
+
+            const dateRes = await axios.post('http://localhost:5000/api/assistant/parse-dates', { message: input });
+            const dateRange = dateRes.data;
+
+            if (queryInfo?.operation && queryInfo?.metrics?.length > 0 && dateRange?.startDate) {
+                const res = await axios.get(`http://localhost:5000/api/logs/${user.user_id}`, {
                     params: {
-                        start_date: startDate.toISOString().split('T')[0],
-                        end_date: endDate.toISOString().split('T')[0]
+                        start_date: dateRange.startDate,
+                        end_date: dateRange.endDate,
+                        operation: queryInfo.operation,
+                        metric: queryInfo.metrics[0]
                     }
                 });
-                logs = logsRes.data;
+                const result = res.data.result;
+                const friendlyMetric = queryInfo.metrics[0].replace('_', ' ');
+                const friendlyOperation = queryInfo.operation.replace('avg', 'average');
+                const reply = `Your ${friendlyOperation} ${friendlyMetric} from ${dateRange.startDate} to ${dateRange.endDate} was ${result ? parseFloat(result).toFixed(2) : 'N/A'}.`;
+                
+                const modelMessage = { role: "assistant", content: reply };
+                setMessages(prev => [...prev, modelMessage]);
+                await axios.post(`http://localhost:5000/api/chats/${sessionId}/messages`, modelMessage);
+
+            } else {
+                const profileRes = await axios.get(`http://localhost:5000/api/profile/${user.user_id}`);
+                let logs = [];
+                
+                if ((queryInfo?.metrics?.length > 0) || dateRange?.startDate) {
+                    const params = {
+                        user_id: user.user_id,
+                        metrics: queryInfo?.metrics?.join(',')
+                    };
+
+                    if (dateRange?.startDate && dateRange.startDate !== 'null') {
+                        params.start_date = dateRange.startDate;
+                        params.end_date = dateRange.endDate;
+                    }
+
+                    if (queryInfo?.metrics?.length > 0) {
+                        const logsRes = await axios.get(`http://localhost:5000/api/logs/specific`, { params });
+                        logs = logsRes.data;
+                    } else {
+                        const logsRes = await axios.get(`http://localhost:5000/api/logs/${user.user_id}`, { params });
+                        logs = logsRes.data;
+                    }
+                }
+
+                const context = `
+                    Current Date: ${new Date().toLocaleDateString()}
+                    User Profile: ${JSON.stringify(profileRes.data)}
+                    ${logs.length > 0 ? `Health Logs: ${JSON.stringify(logs)}` : ''}
+                `;
+
+                const conversationHistory = [...messages, userMessage].map(msg => `${msg.role}: ${msg.content}`).join('\n');
+                const fullPrompt = `${context}\n\n${conversationHistory}\nassistant:`;
+                
+                const geminiRes = await axios.post('http://localhost:5000/api/assistant/generate', { prompt: fullPrompt });
+                const reply = geminiRes.data.reply;
+                
+                const modelMessage = { role: "assistant", content: reply };
+                setMessages(prev => [...prev, modelMessage]);
+                await axios.post(`http://localhost:5000/api/chats/${sessionId}/messages`, modelMessage);
             }
-
-            const context = `
-                Current Date: ${new Date().toLocaleDateString()}
-                User Profile: ${JSON.stringify(profileRes.data)}
-                ${logs.length > 0 ? `Health Logs: ${JSON.stringify(logs)}` : ''}
-            `;
-
-            const conversationHistory = [...messages, userMessage].map(msg => `${msg.role}: ${msg.content}`).join('\n');
-            const fullPrompt = `${context}\n\n${conversationHistory}\nassistant:`;
-            
-            const geminiRes = await axios.post('http://localhost:5000/api/assistant/generate', { prompt: fullPrompt });
-            const reply = geminiRes.data.reply;
-            
-            const modelMessage = { role: "assistant", content: reply };
-            setMessages(prev => [...prev, modelMessage]);
-            await axios.post(`http://localhost:5000/api/chats/${sessionId}/messages`, modelMessage);
 
         } catch (error) {
             console.error("Failed to send message or get reply:", error);
@@ -194,8 +202,8 @@ const Assistant = () => {
                                     {messages.length > 0 ? (
                                         messages.map((msg, index) => (
                                             <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-xl p-3 rounded-xl ${msg.role === 'user' ? 'bg-[var(--theme-primary)] text-[var(--theme-primary-text)]' : 'bg-gray-200 dark:bg-gray-700 text-[var(--theme-text)]'}`}>
-                                                    <p>{msg.content}</p>
+                                                <div className={`chat-message max-w-xl p-3 rounded-xl ${msg.role === 'user' ? 'bg-[var(--theme-primary)] text-[var(--theme-primary-text)]' : 'bg-gray-200 dark:bg-gray-700 text-[var(--theme-text)]'}`}>
+                                                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                                                 </div>
                                             </div>
                                         ))
