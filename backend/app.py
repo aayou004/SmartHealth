@@ -4,9 +4,14 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import sqlite3
-from datetime import date
+from datetime import date, timedelta, datetime
 import io
 import csv
+import requests
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -74,6 +79,25 @@ def init_db():
             symptoms TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
             UNIQUE(user_id, date)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (session_id) REFERENCES chat_sessions (id) ON DELETE CASCADE
         )
     ''')
     conn.commit()
@@ -178,8 +202,27 @@ def get_health_logs(user_id):
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    operation = request.args.get('operation')
+    metric = request.args.get('metric')
+
     try:
-        c.execute("SELECT * FROM health_data WHERE user_id = ? ORDER BY date ASC", (user_id,))
+        if operation and metric:
+            if operation.upper() in ['AVG', 'SUM', 'MIN', 'MAX']:
+                valid_metrics = ['steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake', 'protein', 'carbs', 'fat', 'active_minutes', 'workout_intensity', 'stress_level', 'mindful_minutes', 'heart_rate', 'weight']
+                if metric not in valid_metrics:
+                    return jsonify({"error": "Invalid metric"}), 400
+                
+                query = f"SELECT {operation.upper()}({metric}) as value FROM health_data WHERE user_id = ? AND date BETWEEN ? AND ?"
+                c.execute(query, (user_id, start_date, end_date))
+                result = c.fetchone()
+                return jsonify({"result": result['value'] if result else None})
+        elif start_date and end_date:
+            c.execute("SELECT * FROM health_data WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC", (user_id, start_date, end_date))
+        else:
+            c.execute("SELECT * FROM health_data WHERE user_id = ? ORDER BY date ASC", (user_id,))
+        
         rows = c.fetchall()
         logs = [dict(row) for row in rows]
         return jsonify(logs)
@@ -187,6 +230,53 @@ def get_health_logs(user_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/logs/specific', methods=['GET'])
+def get_specific_logs():
+    user_id = request.args.get('user_id')
+    metrics_str = request.args.get('metrics')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    if not all([user_id, metrics_str]):
+        return jsonify({"error": "Missing user_id or metrics"}), 400
+
+    metrics = metrics_str.split(',')
+    valid_metrics = ['steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake', 'protein', 'carbs', 'fat', 'active_minutes', 'workout_intensity', 'stress_level', 'mindful_minutes', 'heart_rate', 'weight', 'date', 'journal_entry', 'symptoms', 'workout_type']
+    
+    for metric in metrics:
+        if metric not in valid_metrics:
+            return jsonify({"error": f"Invalid metric: {metric}"}), 400
+
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    try:
+        if not (start_date and end_date):
+            c.execute("SELECT MAX(date) as max_date FROM health_data WHERE user_id = ?", (user_id,))
+            row = c.fetchone()
+            if not row or not row['max_date']:
+                return jsonify([]) 
+            
+            end_date_obj = datetime.strptime(row['max_date'], '%Y-%m-%d').date()
+            start_date_obj = end_date_obj - timedelta(days=29)
+            
+            start_date = start_date_obj.isoformat()
+            end_date = end_date_obj.isoformat()
+
+        query = f"SELECT date, {', '.join(metrics)} FROM health_data WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC"
+        params = (user_id, start_date, end_date)
+        
+        c.execute(query, params)
+        rows = c.fetchall()
+        logs = [dict(row) for row in rows]
+        return jsonify(logs)
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
 
 @app.route('/api/profile/<int:user_id>', methods=['GET', 'POST', 'DELETE'])
 def user_profile(user_id):
@@ -375,6 +465,251 @@ def export_csv(user_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/chats/<int:user_id>', methods=['GET', 'POST'])
+def handle_chats(user_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    if request.method == 'GET':
+        try:
+            c.execute("SELECT * FROM chat_sessions WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+            rows = c.fetchall()
+            sessions = [dict(row) for row in rows]
+            return jsonify(sessions)
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+    if request.method == 'POST':
+        data = request.json
+        title = data.get('title')
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+        try:
+            c.execute("INSERT INTO chat_sessions (user_id, title) VALUES (?, ?)", (user_id, title))
+            conn.commit()
+            return jsonify({"message": "Chat session created", "id": c.lastrowid}), 201
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/chats/<int:session_id>', methods=['DELETE'])
+def delete_chat(session_id):
+    conn = sqlite3.connect('health.db')
+    c = conn.cursor()
+    try:
+        c.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+        c.execute("DELETE FROM chat_sessions WHERE id = ?", (session_id,))
+        conn.commit()
+        return jsonify({"message": "Chat session deleted"}), 200
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/chats/<int:session_id>/messages', methods=['GET', 'POST'])
+def handle_messages(session_id):
+    conn = sqlite3.connect('health.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+
+    if request.method == 'GET':
+        try:
+            c.execute("SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC", (session_id,))
+            rows = c.fetchall()
+            messages = [dict(row) for row in rows]
+            return jsonify(messages)
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+    if request.method == 'POST':
+        data = request.json
+        role = data.get('role')
+        content = data.get('content')
+        if not role or not content:
+            return jsonify({"error": "Role and content are required"}), 400
+        try:
+            c.execute("INSERT INTO chat_messages (session_id, role, content) VALUES (?, ?, ?)", (session_id, role, content))
+            conn.commit()
+            return jsonify({"message": "Message added"}), 201
+        except sqlite3.Error as e:
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+
+@app.route('/api/assistant/generate', methods=['POST'])
+def generate_gemini_response():
+    data = request.json
+    prompt = data.get('prompt')
+    api_key = os.getenv("GEMINI_API_KEY")
+    
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            return jsonify({"reply": result['candidates'][0]['content']['parts'][0]['text']})
+        else:
+            return jsonify({"error": "No content generated"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/assistant/parse-dates', methods=['POST'])
+def parse_dates():
+    data = request.json
+    message = data.get('message')
+    api_key = os.getenv("GEMINI_API_KEY")
+    today = date.today().isoformat()
+
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+
+    prompt = f"Given the current date is {today}, analyze the following user message and extract a start and end date. The dates should be in YYYY-MM-DD format. If no specific date or range is mentioned, return null for both startDate and endDate. User Message: \"{message}\""
+    
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    schema = {
+        "type": "OBJECT",
+        "properties": {
+            "startDate": {"type": "STRING"},
+            "endDate": {"type": "STRING"}
+        }
+    }
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": schema
+        }
+    }
+
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            date_info_str = result['candidates'][0]['content']['parts'][0]['text']
+            date_info = json.loads(date_info_str)
+            return jsonify(date_info)
+        else:
+            return jsonify({'startDate': None, 'endDate': None})
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+    except json.JSONDecodeError:
+        return jsonify({"error": "Failed to decode AI response"}), 500
+
+@app.route('/api/assistant/parse-query', methods=['POST'])
+def parse_query():
+    data = request.json
+    message = data.get('message')
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+
+    prompt = f"""
+    Analyze the user's message to identify a requested calculation (average, total, min, max, difference) 
+    and the specific health metric(s) they are asking about from the following list: 
+    ['steps', 'sleep_hours', 'water_glasses', 'mood', 'calorie_intake', 'protein', 'carbs', 'fat', 
+    'active_minutes', 'workout_intensity', 'stress_level', 'mindful_minutes', 'heart_rate', 'weight', 'journal_entry', 'symptoms'].
+    
+    General terms like "feeling" should map to ['mood', 'stress_level', 'journal_entry', 'symptoms'].
+    Terms like "activity" or "exercise" should map to ['steps', 'active_minutes', 'workout_type', 'workout_intensity'].
+    Terms like "diet" or "nutrition" should map to ['calorie_intake', 'protein', 'carbs', 'fat', 'water_glasses'].
+
+    Return a JSON object with 'operation' (one of 'avg', 'sum', 'min', 'max', 'diff', or null) 
+    and 'metrics' (an array of one or more valid metric strings).
+    If no specific operation or metric is found, return null for that field.
+
+    User Message: "{message}"
+    """
+    
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    schema = {
+        "type": "OBJECT",
+        "properties": {
+            "operation": {"type": "STRING", "nullable": True},
+            "metrics": {"type": "ARRAY", "items": {"type": "STRING"}, "nullable": True}
+        }
+    }
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": schema
+        }
+    }
+
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            query_info_str = result['candidates'][0]['content']['parts'][0]['text']
+            query_info = json.loads(query_info_str)
+            return jsonify(query_info)
+        else:
+            return jsonify({'operation': None, 'metrics': None})
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+    except json.JSONDecodeError:
+        return jsonify({"error": "Failed to decode AI response"}), 500
+
+
+@app.route('/api/assistant/title', methods=['POST'])
+def generate_title():
+    data = request.json
+    message = data.get('message')
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+
+    prompt = f"Summarize the following user message into a short title of 3 to 5 words. Do not include any other text, quotes, or conversational filler. Just provide the title.\n\nUser Message: \"{message}\"\n\nTitle:"
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
+    try:
+        response = requests.post(api_url, headers={'Content-Type': 'application/json'}, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'candidates' in result and result['candidates']:
+            title = result['candidates'][0]['content']['parts'][0]['text'].strip().replace("\"", "")
+            return jsonify({"title": title})
+        else:
+            return jsonify({"error": "No title generated"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

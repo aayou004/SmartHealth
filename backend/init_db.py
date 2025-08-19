@@ -23,7 +23,8 @@ c.execute('''
         dietary_preferences TEXT,
         medical_conditions TEXT,
         allergies TEXT,
-        workout_preferences TEXT
+        workout_preferences TEXT,
+        background_image TEXT
     )
 ''')
 
@@ -50,8 +51,31 @@ c.execute('''
         heart_rate INTEGER,
         weight REAL,
         symptoms TEXT,
-        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
         UNIQUE(user_id, date)
+    )
+''')
+
+c.execute('DROP TABLE IF EXISTS chat_sessions')
+c.execute('''
+    CREATE TABLE IF NOT EXISTS chat_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    )
+''')
+
+c.execute('DROP TABLE IF EXISTS chat_messages')
+c.execute('''
+    CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (session_id) REFERENCES chat_sessions (id) ON DELETE CASCADE
     )
 ''')
 
@@ -61,4 +85,7 @@ conn.close()
 if not os.path.exists('uploads/profile_pictures'):
     os.makedirs('uploads/profile_pictures')
 
-print("Database initialized and upload directory created successfully.")
+if not os.path.exists('uploads/backgrounds'):
+    os.makedirs('uploads/backgrounds')
+
+print("Database initialized and upload directories created successfully.")

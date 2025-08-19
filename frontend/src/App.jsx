@@ -10,6 +10,7 @@ import Calendar from "./Calendar";
 import DateForm from "./DateForm";
 import UserProfile from "./UserProfile";
 import Settings from "./Settings";
+import Assistant from "./Assistant";
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -33,6 +34,7 @@ const AnimatedRoutes = () => {
                 <Route path="/calendar" element={<PageWrapper><Calendar /></PageWrapper>} />
                 <Route path="/profile" element={<PageWrapper><UserProfile /></PageWrapper>} />
                 <Route path="/settings" element={<PageWrapper><Settings /></PageWrapper>} />
+                <Route path="/assistant" element={<PageWrapper><Assistant /></PageWrapper>} />
                 <Route path="/logout" element={<PageWrapper><LogoutPage /></PageWrapper>} />
             </Routes>
         </AnimatePresence>

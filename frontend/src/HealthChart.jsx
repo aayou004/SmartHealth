@@ -1,4 +1,5 @@
-import React, { useContext } from "react";
+import React, { useState, useMemo, useContext, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   LineChart,
   Line,
@@ -7,12 +8,23 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Label,
+  Legend,
 } from "recharts";
+import * as htmlToImage from 'html-to-image';
 import { ThemeContext } from "./ThemeContext";
+import { AnimatePresence, motion } from "framer-motion";
+import "@material/web/select/outlined-select.js";
+import "@material/web/select/select-option.js";
+import "@material/web/iconbutton/icon-button.js";
+import "@material/web/button/outlined-button.js";
 
-const HealthChart = ({ data, metric }) => {
+const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
   const { theme } = useContext(ThemeContext);
+  const [selectedMetric, setSelectedMetric] = useState("steps");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const sliderRef = useRef(null);
+  const fullscreenSliderRef = useRef(null);
+  const fullscreenChartRef = useRef(null);
 
   const colors = {
     light: {
@@ -21,6 +33,9 @@ const HealthChart = ({ data, metric }) => {
       line: 'var(--theme-chart-line)',
       tooltipBg: 'var(--theme-card-bg)',
       tooltipBorder: 'var(--theme-outline)',
+      protein: '#8884d8',
+      carbs: '#82ca9d',
+      fat: '#ffc658'
     },
     dark: {
       tick: 'var(--dracula-foreground)',
@@ -28,49 +43,258 @@ const HealthChart = ({ data, metric }) => {
       line: 'var(--theme-chart-line)',
       tooltipBg: 'var(--theme-card-bg)',
       tooltipBorder: 'var(--theme-outline)',
+      protein: '#8884d8',
+      carbs: '#82ca9d',
+      fat: '#ffc658'
     }
   };
   const currentColors = theme === 'dark' ? colors.dark : colors.light;
 
-  return (
-    <div className="w-full h-96 bg-[var(--theme-card-bg)] rounded-xl p-4 border border-[var(--theme-outline)] backdrop-blur-lg">
-      <h2 className="text-xl font-bold mb-4 text-[var(--theme-text)] capitalize">
-        {metric.replace("_", " ")} Over Time
-      </h2>
-      <ResponsiveContainer width="100%" height="90%">
-        <LineChart data={data}>
-          <CartesianGrid stroke={currentColors.grid} strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={{ fill: currentColors.tick }}>
-            <Label value="Date" offset={-5} position="insideBottom" fill={currentColors.tick} />
-          </XAxis>
-          <YAxis tick={{ fill: currentColors.tick }}>
-            <Label
-              value={metric.replace("_", " ").toUpperCase()}
-              angle={-90}
-              position="insideLeft"
-              offset={10}
-              style={{ textAnchor: "middle", fill: currentColors.tick }}
-            />
-          </YAxis>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: currentColors.tooltipBg,
-              borderColor: currentColors.tooltipBorder,
-              borderRadius: '0.75rem'
-            }}
-            labelStyle={{ color: currentColors.tick }}
-            itemStyle={{ color: currentColors.line }}
-          />
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        toggleFullscreen();
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreen, toggleFullscreen]);
+
+  useEffect(() => {
+    const sliders = [sliderRef.current, fullscreenSliderRef.current];
+    sliders.forEach(slider => {
+      if (slider) {
+        const min = parseInt(slider.min, 10);
+        const max = parseInt(slider.max, 10);
+        const val = parseInt(slider.value, 10);
+        const percentage = max === min ? 0 : ((val - min) * 100) / (max - min);
+        slider.style.setProperty('--slider-percentage', `${percentage}%`);
+      }
+    });
+  }, [daysToShow, data, isFullscreen]);
+
+  const filteredData = useMemo(() => {
+    return data.slice(-daysToShow);
+  }, [data, daysToShow]);
+
+  const metricOptions = [
+    { value: "steps", label: "Steps" },
+    { value: "sleep_hours", label: "Sleep" },
+    { value: "heart_rate", label: "Heart Rate" },
+    { value: "workout_intensity", label: "Workout Intensity" },
+    { value: "weight", label: "Weight" },
+    { value: "water_glasses", label: "Water" },
+    { value: "calorie_intake", label: "Calories" },
+    { value: "macros", label: "Protein / Carbs / Fat" },
+    { value: "active_minutes", label: "Active Mins" },
+    { value: "mindful_minutes", label: "Mindful Mins" },
+    { value: "mood", label: "Mood" },
+    { value: "stress_level", label: "Stress" },
+  ];
+
+  const chartTitle = metricOptions.find(opt => opt.value === selectedMetric)?.label + " Over Time";
+  const selectedMetricLabel = metricOptions.find(opt => opt.value === selectedMetric)?.label;
+
+  const formatDate = (tickItem) => {
+    const [year, month, day] = tickItem.split('-');
+    return `${month}/${day}`;
+  };
+
+  const handleDownload = useCallback(() => {
+    if (fullscreenChartRef.current === null) {
+      return;
+    }
+
+    htmlToImage.toPng(fullscreenChartRef.current, { cacheBust: true })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = 'health-chart.png';
+        link.href = dataUrl;
+        link.click();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, [fullscreenChartRef]);
+
+  const chartContent = (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={filteredData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+        <CartesianGrid stroke={currentColors.grid} strokeDasharray="3 3" />
+        <XAxis dataKey="date" tick={{ fill: currentColors.tick }} tickFormatter={formatDate} />
+        <YAxis tick={{ fill: currentColors.tick }} />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: currentColors.tooltipBg,
+            borderColor: currentColors.tooltipBorder,
+            borderRadius: '0.75rem'
+          }}
+          labelStyle={{ color: currentColors.tick }}
+        />
+        {selectedMetric === 'macros' ? (
+          <>
+            <Line type="monotone" dataKey="protein" name="Protein (g)" stroke={currentColors.protein} strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="carbs" name="Carbs (g)" stroke={currentColors.carbs} strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="fat" name="Fat (g)" stroke={currentColors.fat} strokeWidth={2} dot={false} />
+          </>
+        ) : (
           <Line
             type="monotone"
-            dataKey={metric}
+            dataKey={selectedMetric}
+            name={selectedMetricLabel}
             stroke={currentColors.line}
             strokeWidth={2}
             dot={false}
           />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+        )}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+
+  const LegendItem = ({ color, name }) => (
+    <span style={{ color: color, marginLeft: '15px', display: 'inline-flex', alignItems: 'center' }}>
+      <span style={{ display: 'inline-block', marginRight: '5px', width: '10px', height: '10px', backgroundColor: color, borderRadius: '2px' }}></span>
+      {name}
+    </span>
+  );
+
+  return (
+    <>
+      <div className="w-full h-[32rem] p-2 flex flex-col">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-4 gap-4">
+          <div className="w-64 justify-self-start">
+            <md-outlined-select value={selectedMetric} onchange={(e) => setSelectedMetric(e.target.value)}>
+              {metricOptions.map(option => (
+                <md-select-option key={option.value} value={option.value}>{option.label}</md-select-option>
+              ))}
+            </md-outlined-select>
+          </div>
+          <h2 className="text-2xl font-bold text-[var(--theme-text)] capitalize text-center">
+            {chartTitle}
+          </h2>
+          <div className="justify-self-end">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <md-outlined-button onClick={toggleFullscreen}>Maximize</md-outlined-button>
+            </motion.div>
+          </div>
+        </div>
+        {filteredData.length === 0 ? (
+          <div className="flex items-center justify-center flex-1">
+            <p className="text-[var(--theme-text)] opacity-70">No Data Available</p>
+          </div>
+        ) : (
+          <div className="flex-1">{chartContent}</div>
+        )}
+        <div className="flex justify-between items-center mt-2">
+            <div className="flex items-center gap-1 w-52">
+                <input
+                    ref={sliderRef}
+                    type="range"
+                    min="7"
+                    max={data.length > 7 ? data.length : 7}
+                    value={daysToShow}
+                    onChange={(e) => setDaysToShow(Number(e.target.value))}
+                    className="w-full themed-slider"
+                />
+                <span className="text-sm font-semibold text-[var(--theme-text)] w-10 text-right pb-0.5">{daysToShow}d</span>
+            </div>
+            <div className="text-sm font-semibold text-[var(--theme-text)]">
+              {selectedMetric === 'macros' ? (
+                <>
+                  <LegendItem color={currentColors.protein} name="Protein (g)" />
+                  <LegendItem color={currentColors.carbs} name="Carbs (g)" />
+                  <LegendItem color={currentColors.fat} name="Fat (g)" />
+                </>
+              ) : (
+                <LegendItem color={currentColors.line} name={selectedMetricLabel} />
+              )}
+            </div>
+        </div>
+      </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {isFullscreen && (
+            <motion.div
+              className="fullscreen-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={toggleFullscreen}
+            >
+              <motion.div
+                ref={fullscreenChartRef}
+                className="fullscreen-chart bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)]"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="w-full h-full flex flex-col">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-4 gap-4">
+                    <div className="w-64 justify-self-start">
+                      <md-outlined-select value={selectedMetric} onchange={(e) => setSelectedMetric(e.target.value)}>
+                        {metricOptions.map(option => (
+                          <md-select-option key={option.value} value={option.value}>{option.label}</md-select-option>
+                        ))}
+                      </md-outlined-select>
+                    </div>
+                    <h2 className="text-2xl font-bold text-[var(--theme-text)] capitalize text-center">
+                      {chartTitle}
+                    </h2>
+                    <div className="justify-self-end flex items-center gap-2">
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <md-outlined-button onClick={handleDownload}>Download</md-outlined-button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <md-outlined-button onClick={toggleFullscreen}>Minimize</md-outlined-button>
+                      </motion.div>
+                    </div>
+                  </div>
+                  <div className="flex-1">{chartContent}</div>
+                  <div className="flex justify-between items-center mt-2">
+                      <div className="flex items-center gap-1 w-52">
+                          <input
+                              ref={fullscreenSliderRef}
+                              type="range"
+                              min="7"
+                              max={data.length > 7 ? data.length : 7}
+                              value={daysToShow}
+                              onChange={(e) => setDaysToShow(Number(e.target.value))}
+                              className="w-full themed-slider"
+                          />
+                          <span className="text-sm font-semibold text-[var(--theme-text)] w-10 text-right pb-0.5">{daysToShow}d</span>
+                      </div>
+                      <div className="text-sm font-semibold text-[var(--theme-text)]">
+                        {selectedMetric === 'macros' ? (
+                          <>
+                            <LegendItem color={currentColors.protein} name="Protein (g)" />
+                            <LegendItem color={currentColors.carbs} name="Carbs (g)" />
+                            <LegendItem color={currentColors.fat} name="Fat (g)" />
+                          </>
+                        ) : (
+                          <LegendItem color={currentColors.line} name={selectedMetricLabel} />
+                        )}
+                      </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.getElementById('portal-root')
+      )}
+    </>
   );
 };
 

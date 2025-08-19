@@ -1,46 +1,15 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
-import { motion, AnimatePresence } from "framer-motion";
+import Sidebar from "./Sidebar";
+import { useOverflow } from "./useOverflow";
+import { motion } from "framer-motion";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/icon/icon.js";
 import "@material/web/iconbutton/icon-button.js";
 import "@material/web/textfield/outlined-text-field.js";
-
-const AccordionCategory = ({ title, children, initialOpen = false }) => {
-    const [isOpen, setIsOpen] = useState(initialOpen);
-    return (
-        <div>
-            <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center py-4 text-left">
-                <span className="text-xl font-semibold text-[var(--theme-text)]">{title}</span>
-                <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
-                    <md-icon>expand_more</md-icon>
-                </motion.div>
-            </button>
-            <AnimatePresence initial={false}>
-                {isOpen && (
-                    <motion.div
-                        key="content"
-                        initial="collapsed"
-                        animate="open"
-                        exit="collapsed"
-                        variants={{
-                            open: { opacity: 1, height: "auto" },
-                            collapsed: { opacity: 0, height: 0 }
-                        }}
-                        transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }}
-                    >
-                        <div className="pb-2 pt-2">
-                            {children}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
 
 const FormField = ({ label, description, children }) => (
     <div className="p-4 rounded-lg border border-[var(--theme-outline)] mb-4 flex items-center justify-between gap-4">
@@ -68,11 +37,12 @@ const DateForm = () => {
     const { date: selectedDate } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { isSidebarOpen, toggleSidebar } = useContext(ThemeContext);
     const [logData, setLogData] = useState({});
     const [message, setMessage] = useState("");
     const user = JSON.parse(localStorage.getItem("user"));
     const calendarState = location.state?.calendarState;
+    const scrollRef = useRef(null);
+    const isOverflowing = useOverflow(scrollRef);
 
     useEffect(() => {
         if (!user || !user.user_id) {
@@ -146,75 +116,36 @@ const DateForm = () => {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("user");
-        navigate("/");
-    };
-
     const handleBackToCalendar = () => {
         navigate('/calendar', { state: calendarState });
     };
 
     return (
         <div className="flex h-screen bg-transparent">
-            <div className={`bg-[var(--theme-card-bg)] backdrop-blur-lg transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'} flex flex-col`}>
-                <div className="p-4">
-                    <div
-                        className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`}
-                        onClick={toggleSidebar}
-                    >
-                        <md-icon>menu</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>SmartHealth</span>
-                    </div>
-                </div>
-                <nav className="flex flex-col gap-4 p-4 flex-grow">
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/dashboard')}>
-                        <md-icon>dashboard</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Dashboard</span>
-                    </div>
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/calendar')}>
-                        <md-icon>calendar_month</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Calendar</span>
-                    </div>
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/profile')}>
-                        <md-icon>person</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Profile</span>
-                    </div>
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={() => navigate('/settings')}>
-                        <md-icon>settings</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Settings</span>
-                    </div>
-                </nav>
-                <nav className="flex flex-col gap-4 p-4">
-                    <div className={`flex items-center p-2 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer ${isSidebarOpen ? 'gap-2' : 'justify-center'}`} onClick={handleLogout}>
-                        <md-icon>logout</md-icon>
-                        <span className={`text-[var(--theme-text)] whitespace-nowrap overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>Log Out</span>
-                    </div>
-                </nav>
-            </div>
+            <Sidebar />
 
-            <div className="flex-1 flex flex-col overflow-y-auto">
-                <main className="container mx-auto px-6 pt-4 pb-6">
-                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg">
-                        <h2 className="text-3xl font-bold mb-1 text-center text-[var(--theme-text)]">
-                            Daily Log
-                        </h2>
-                        <p className="text-center text-md text-[var(--theme-text)] opacity-70 mb-6">
-                            {new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                        <form id="log-form" onSubmit={handleLogSubmit}>
-                            <TextAreaFormField label="Journal Entry" description="Write a brief entry about your day...">
-                                <md-outlined-text-field
-                                    class="w-full resize-none"
-                                    id="journal_entry"
-                                    type="textarea"
-                                    rows="8"
-                                    value={logData.journal_entry || ""}
-                                    onInput={handleInputChange}
-                                ></md-outlined-text-field>
-                            </TextAreaFormField>
-                            
-                            <AccordionCategory title="Physical Activity">
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <main className="container mx-auto px-6 pt-4 pb-6 flex-1 flex flex-col min-h-0">
+                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
+                        <div ref={scrollRef} className={`flex-1 overflow-y-auto ${isOverflowing ? 'pr-4' : ''}`}>
+                            <h2 className="text-3xl font-bold mb-1 text-center text-[var(--theme-text)]">
+                                Daily Log
+                            </h2>
+                            <p className="text-center text-md text-[var(--theme-text)] opacity-70 mb-6">
+                                {new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                            <form id="log-form" onSubmit={handleLogSubmit}>
+                                <TextAreaFormField label="Journal Entry" description="Write a brief entry about your day...">
+                                    <md-outlined-text-field
+                                        class="w-full resize-none"
+                                        id="journal_entry"
+                                        type="textarea"
+                                        rows="8"
+                                        value={logData.journal_entry || ""}
+                                        onInput={handleInputChange}
+                                    ></md-outlined-text-field>
+                                </TextAreaFormField>
+                                
                                 <FormField label="Steps" description="Enter the total number of steps taken.">
                                      <md-outlined-text-field class="w-full max-w-xs" id="steps" type="number" value={logData.steps || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </FormField>
@@ -235,9 +166,7 @@ const DateForm = () => {
                                          ))}
                                      </div>
                                 </FormField>
-                            </AccordionCategory>
 
-                            <AccordionCategory title="Nutrition & Hydration">
                                 <FormField label="Calories Consumed" description="Enter the total calorie intake for the day.">
                                     <md-outlined-text-field class="w-full max-w-xs" id="calorie_intake" type="number" value={logData.calorie_intake || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </FormField>
@@ -253,9 +182,7 @@ const DateForm = () => {
                                 <FormField label="Fat (g)" description="Enter the total fat intake in grams.">
                                     <md-outlined-text-field class="w-full max-w-xs" id="fat" type="number" value={logData.fat || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </FormField>
-                            </AccordionCategory>
 
-                            <AccordionCategory title="General Health & Wellness">
                                  <FormField label="Mood" description="Rate your overall mood on a scale of 1 to 5.">
                                     <div className="flex gap-2">
                                          {[1, 2, 3, 4, 5].map(val => (
@@ -293,8 +220,8 @@ const DateForm = () => {
                                 <FormField label="Symptoms" description="List any symptoms experienced today.">
                                     <md-outlined-text-field class="w-full max-w-xs" id="symptoms" value={logData.symptoms || ""} onInput={handleInputChange}></md-outlined-text-field>
                                 </FormField>
-                            </AccordionCategory>
-                        </form>
+                            </form>
+                        </div>
                         <div className="mt-6 flex justify-end gap-4">
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <md-outlined-button onClick={handleBackToCalendar}>Back to Calendar</md-outlined-button>
