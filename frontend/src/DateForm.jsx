@@ -5,6 +5,7 @@ import { ThemeContext } from "./ThemeContext";
 import Sidebar from "./Sidebar";
 import { useOverflow } from "./useOverflow";
 import { motion } from "framer-motion";
+import StatusMessage from "./StatusMessage";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/icon/icon.js";
@@ -38,7 +39,7 @@ const DateForm = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [logData, setLogData] = useState({});
-    const [message, setMessage] = useState("");
+    const { statusMessage, setStatusMessage } = useContext(ThemeContext);
     const user = JSON.parse(localStorage.getItem("user"));
     const calendarState = location.state?.calendarState;
     const scrollRef = useRef(null);
@@ -104,15 +105,13 @@ const DateForm = () => {
         
         try {
             await axios.post("http://localhost:5000/api/log", payload);
-            setMessage("Log submitted successfully!");
+            setStatusMessage("Log submitted successfully!");
             setTimeout(() => {
-                setMessage("");
                 navigate("/calendar", { state: calendarState });
             }, 1500);
         } catch (error) {
-            setMessage("Failed to submit log.");
+            setStatusMessage("Failed to submit log.");
             console.error("Log submission error:", error);
-            setTimeout(() => setMessage(""), 3000);
         }
     };
 
@@ -126,7 +125,8 @@ const DateForm = () => {
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <main className="container mx-auto px-6 pt-4 pb-6 flex-1 flex flex-col min-h-0">
-                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
+                    <div className="relative bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
+                        <StatusMessage message={statusMessage} onDismiss={() => setStatusMessage("")} />
                         <div ref={scrollRef} className={`flex-1 overflow-y-auto ${isOverflowing ? 'pr-4' : ''}`}>
                             <h2 className="text-3xl font-bold mb-1 text-center text-[var(--theme-text)]">
                                 Daily Log
@@ -230,7 +230,6 @@ const DateForm = () => {
                                 <md-filled-button type="button" onClick={() => document.getElementById('log-form')?.requestSubmit()}>Save Entry</md-filled-button>
                             </motion.div>
                         </div>
-                        {message && <p className="mt-4 text-center text-green-500 opacity-90">{message}</p>}
                     </div>
                 </main>
             </div>

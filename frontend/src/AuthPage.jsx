@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ThemeContext } from "./ThemeContext";
 import { motion } from "framer-motion";
+import StatusMessage from "./StatusMessage";
 import "@material/web/textfield/outlined-text-field.js";
 import "@material/web/button/filled-button.js";
 import "@material/web/icon/icon.js";
@@ -12,9 +13,8 @@ const AuthPage = () => {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useContext(ThemeContext);
+  const { statusMessage, setStatusMessage } = useContext(ThemeContext);
 
   const handleAuthAction = async (e) => {
     e.preventDefault();
@@ -26,7 +26,7 @@ const AuthPage = () => {
       });
 
       if (mode === "register") {
-        setMessage(res.data.message + " Please log in.");
+        setStatusMessage(res.data.message + " Please log in.");
         setMode("login");
         setUsername("");
         setPassword("");
@@ -35,19 +35,19 @@ const AuthPage = () => {
         navigate("/dashboard");
       }
     } catch (error) {
-      setMessage(error.response?.data?.message || `${mode} failed`);
+      setStatusMessage(error.response?.data?.message || `${mode} failed`);
     }
   };
 
   const switchMode = (newMode) => {
     setUsername("");
     setPassword("");
-    setMessage("");
     setMode(newMode);
   };
 
     return (
         <div className="relative min-h-screen flex justify-center items-center bg-[var(--theme-bg)] transition-colors duration-300 p-4">
+            <StatusMessage message={statusMessage} onDismiss={() => setStatusMessage("")} />
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 w-full max-w-4xl">
                 <div className="text-center">
                     <h1 className="text-6xl font-bold text-[var(--theme-text)]">
@@ -108,12 +108,6 @@ const AuthPage = () => {
                             >
                                 Log In
                             </motion.button>
-                        </p>
-                    )}
-
-                    {message && (
-                        <p className="mt-4 text-center text-sm text-red-500 opacity-90">
-                            {message}
                         </p>
                     )}
                 </div>

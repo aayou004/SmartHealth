@@ -4,7 +4,8 @@ import axios from "axios";
 import { ThemeContext } from "./ThemeContext";
 import Sidebar from "./Sidebar";
 import { useOverflow } from "./useOverflow";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import StatusMessage from "./StatusMessage";
 import "@material/web/button/filled-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/textfield/outlined-text-field.js";
@@ -40,7 +41,7 @@ const TextAreaFormField = ({ label, description, children }) => (
 const UserProfile = () => {
     const navigate = useNavigate();
     const [profile, setProfile] = useState({});
-    const [message, setMessage] = useState("");
+    const { statusMessage, setStatusMessage } = useContext(ThemeContext);
     const user = JSON.parse(localStorage.getItem("user"));
     const [profilePictureFile, setProfilePictureFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -76,8 +77,7 @@ const UserProfile = () => {
             setProfilePictureFile(file);
             setPreviewUrl(URL.createObjectURL(file));
         } else {
-            setMessage("Invalid file type. Please select a JPG or PNG image.");
-            setTimeout(() => setMessage(""), 3000);
+            setStatusMessage("Invalid file type. Please select a JPG or PNG image.");
         }
     };
     
@@ -109,15 +109,13 @@ const UserProfile = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-            setMessage("Profile updated successfully!");
+            setStatusMessage("Profile updated successfully!");
             setProfile(res.data.profile);
             setProfilePictureFile(null);
             setPreviewUrl(null);
-            setTimeout(() => setMessage(""), 3000);
         } catch (error) {
-            setMessage("Failed to update profile.");
+            setStatusMessage("Failed to update profile.");
             console.error("Profile update error:", error);
-            setTimeout(() => setMessage(""), 3000);
         }
     };
 
@@ -135,8 +133,7 @@ const UserProfile = () => {
             link.parentNode.removeChild(link);
         } catch (error) {
             console.error("Failed to export data:", error);
-            setMessage("No data to export or an error occurred.");
-            setTimeout(() => setMessage(""), 3000);
+            setStatusMessage("No data to export or an error occurred.");
         }
     };
 
@@ -146,7 +143,8 @@ const UserProfile = () => {
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <main className="container mx-auto px-6 pt-4 pb-6 flex-1 flex flex-col min-h-0">
-                    <div className="bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
+                    <div className="relative bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
+                        <StatusMessage message={statusMessage} onDismiss={() => setStatusMessage("")} />
                         <div ref={scrollRef} className={`flex-1 overflow-y-auto ${isOverflowing ? 'pr-4' : ''}`}>
                             <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">User Profile</h2>
                             <div className="flex justify-center mb-6">
@@ -271,7 +269,6 @@ const UserProfile = () => {
                                 <md-filled-button type="button" onClick={handleProfileUpdate}>Save Changes</md-filled-button>
                             </motion.div>
                         </div>
-                        {message && <p className="mt-4 text-center text-green-500 opacity-90">{message}</p>}
                     </div>
                 </main>
             </div>

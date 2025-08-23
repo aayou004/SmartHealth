@@ -19,36 +19,22 @@ import "@material/web/iconbutton/icon-button.js";
 import "@material/web/button/outlined-button.js";
 
 const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
-  const { theme } = useContext(ThemeContext);
   const [selectedMetric, setSelectedMetric] = useState("steps");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const sliderRef = useRef(null);
   const fullscreenSliderRef = useRef(null);
   const fullscreenChartRef = useRef(null);
 
-  const colors = {
-    light: {
-      tick: 'var(--dracula-background)',
-      grid: 'var(--theme-chart-grid)',
-      line: 'var(--theme-chart-line)',
-      tooltipBg: 'var(--theme-card-bg)',
-      tooltipBorder: 'var(--theme-outline)',
-      protein: '#8884d8',
-      carbs: '#82ca9d',
-      fat: '#ffc658'
-    },
-    dark: {
-      tick: 'var(--dracula-foreground)',
-      grid: 'var(--theme-chart-grid)',
-      line: 'var(--theme-chart-line)',
-      tooltipBg: 'var(--theme-card-bg)',
-      tooltipBorder: 'var(--theme-outline)',
-      protein: '#8884d8',
-      carbs: '#82ca9d',
-      fat: '#ffc658'
-    }
+  const chartColors = {
+    tick: '#EEECE3',
+    grid: 'rgba(238, 236, 227, 0.2)',
+    line: '#CF9421',
+    tooltipBg: 'rgba(218, 213, 198, 0.1)',
+    tooltipBorder: 'rgba(238, 236, 227, 0.5)',
+    protein: '#8884d8',
+    carbs: '#82ca9d',
+    fat: '#ffc658'
   };
-  const currentColors = theme === 'dark' ? colors.dark : colors.light;
 
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(prev => !prev);
@@ -130,29 +116,29 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
   const chartContent = (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={filteredData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-        <CartesianGrid stroke={currentColors.grid} strokeDasharray="3 3" />
-        <XAxis dataKey="date" tick={{ fill: currentColors.tick }} tickFormatter={formatDate} />
-        <YAxis tick={{ fill: currentColors.tick }} />
+        <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+        <XAxis dataKey="date" tick={{ fill: chartColors.tick }} tickFormatter={formatDate} />
+        <YAxis tick={{ fill: chartColors.tick }} />
         <Tooltip
           contentStyle={{
-            backgroundColor: currentColors.tooltipBg,
-            borderColor: currentColors.tooltipBorder,
+            backgroundColor: chartColors.tooltipBg,
+            borderColor: chartColors.tooltipBorder,
             borderRadius: '0.75rem'
           }}
-          labelStyle={{ color: currentColors.tick }}
+          labelStyle={{ color: chartColors.tick }}
         />
         {selectedMetric === 'macros' ? (
           <>
-            <Line type="monotone" dataKey="protein" name="Protein (g)" stroke={currentColors.protein} strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="carbs" name="Carbs (g)" stroke={currentColors.carbs} strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="fat" name="Fat (g)" stroke={currentColors.fat} strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="protein" name="Protein (g)" stroke={chartColors.protein} strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="carbs" name="Carbs (g)" stroke={chartColors.carbs} strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="fat" name="Fat (g)" stroke={chartColors.fat} strokeWidth={2} dot={false} />
           </>
         ) : (
           <Line
             type="monotone"
             dataKey={selectedMetric}
             name={selectedMetricLabel}
-            stroke={currentColors.line}
+            stroke={chartColors.line}
             strokeWidth={2}
             dot={false}
           />
@@ -211,12 +197,12 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
             <div className="text-sm font-semibold text-[var(--theme-text)]">
               {selectedMetric === 'macros' ? (
                 <>
-                  <LegendItem color={currentColors.protein} name="Protein (g)" />
-                  <LegendItem color={currentColors.carbs} name="Carbs (g)" />
-                  <LegendItem color={currentColors.fat} name="Fat (g)" />
+                  <LegendItem color={chartColors.protein} name="Protein (g)" />
+                  <LegendItem color={chartColors.carbs} name="Carbs (g)" />
+                  <LegendItem color={chartColors.fat} name="Fat (g)" />
                 </>
               ) : (
-                <LegendItem color={currentColors.line} name={selectedMetricLabel} />
+                <LegendItem color={chartColors.line} name={selectedMetricLabel} />
               )}
             </div>
         </div>
@@ -278,12 +264,12 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
                       <div className="text-sm font-semibold text-[var(--theme-text)]">
                         {selectedMetric === 'macros' ? (
                           <>
-                            <LegendItem color={currentColors.protein} name="Protein (g)" />
-                            <LegendItem color={currentColors.carbs} name="Carbs (g)" />
-                            <LegendItem color={currentColors.fat} name="Fat (g)" />
+                            <LegendItem color={chartColors.protein} name="Protein (g)" />
+                            <LegendItem color={chartColors.carbs} name="Carbs (g)" />
+                            <LegendItem color={chartColors.fat} name="Fat (g)" />
                           </>
                         ) : (
-                          <LegendItem color={currentColors.line} name={selectedMetricLabel} />
+                          <LegendItem color={chartColors.line} name={selectedMetricLabel} />
                         )}
                       </div>
                   </div>
