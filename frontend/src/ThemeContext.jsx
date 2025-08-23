@@ -3,20 +3,11 @@ import React, { createContext, useState, useEffect } from 'react';
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [backgroundImage, setBackgroundImage] = useState(
     localStorage.getItem('backgroundImage') || ''
   );
   const [isSidebarOpen, setSidebarOpen] = useState(JSON.parse(localStorage.getItem('sidebarOpen')) !== false);
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     localStorage.setItem('sidebarOpen', isSidebarOpen);
@@ -43,12 +34,14 @@ export const ThemeProvider = ({ children }) => {
   };
 
   const value = {
-    theme,
-    setTheme,
+    theme: 'dark',
+    setTheme: () => {},
     backgroundImage,
     setBackgroundImage,
     isSidebarOpen,
     toggleSidebar,
+    statusMessage,
+    setStatusMessage,
   };
 
   return (

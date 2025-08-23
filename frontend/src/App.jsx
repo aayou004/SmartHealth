@@ -11,6 +11,7 @@ import DateForm from "./DateForm";
 import UserProfile from "./UserProfile";
 import Settings from "./Settings";
 import Assistant from "./Assistant";
+import TestPage from "./TestPage.jsx";
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -36,13 +37,14 @@ const AnimatedRoutes = () => {
                 <Route path="/settings" element={<PageWrapper><Settings /></PageWrapper>} />
                 <Route path="/assistant" element={<PageWrapper><Assistant /></PageWrapper>} />
                 <Route path="/logout" element={<PageWrapper><LogoutPage /></PageWrapper>} />
+                <Route path="/test" element={<PageWrapper><TestPage /></PageWrapper>} />
             </Routes>
         </AnimatePresence>
     );
 }
 
 function App() {
-  const { theme, backgroundImage } = useContext(ThemeContext);
+  const { backgroundImage } = useContext(ThemeContext);
 
   const mainBgStyle = backgroundImage ? {
     backgroundImage: `url(${backgroundImage})`,

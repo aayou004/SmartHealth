@@ -5,27 +5,24 @@
 :root {
   --md-ref-typeface-brand: 'Inter', sans-serif;
   --md-ref-typeface-plain: 'Inter', sans-serif;
-  --dracula-background: #282A36;
-  --dracula-current-line: #44475A;
-  --dracula-foreground: #F8F8F2;
-  --dracula-comment: #6272A4;
-  --dracula-purple: #BD93F9;
-  --dracula-pink: #FF79C6;
-  --theme-surface-solid-light: #FFFFFF;
-  --theme-surface-solid-dark: var(--dracula-current-line);
+
+  --navy: #232E3F;
+  --gold: #CF9421;
+  --off-white: #EEECE3;
+  --beige: #DAD5C6;
 }
 
 body {
-  --theme-bg: var(--dracula-foreground);
-  --theme-text: var(--dracula-background);
-  --theme-primary: var(--dracula-comment);
-  --theme-primary-text: var(--dracula-foreground);
-  --theme-secondary: var(--dracula-pink);
-  --theme-card-bg: rgba(255, 255, 255, 0.6);
-  --theme-outline: rgba(209, 213, 219, 0.9);
-  --theme-chart-line: var(--dracula-pink);
-  --theme-chart-grid: #e5e7eb;
-  --theme-surface-solid: var(--theme-surface-solid-light);
+  --theme-bg: var(--navy);
+  --theme-text: var(--off-white);
+  --theme-primary: var(--gold);
+  --theme-primary-text: var(--navy);
+  --theme-secondary: var(--off-white);
+  --theme-card-bg: rgba(218, 213, 198, 0.1);
+  --theme-outline: rgba(238, 236, 227, 0.5);
+  --theme-chart-line: var(--gold);
+  --theme-chart-grid: rgba(238, 236, 227, 0.2);
+  --theme-surface-solid: #2a3850;
 
   background-color: var(--theme-bg);
   color: var(--theme-text);
@@ -37,36 +34,9 @@ body {
   --md-sys-color-outline: var(--theme-outline);
   --md-sys-color-surface-container-low: var(--theme-card-bg);
   --md-sys-color-surface-container: var(--theme-card-bg);
-  --md-sys-color-on-surface-variant: var(--dracula-comment);
-  --md-sys-color-secondary-container: #e8def8;
-  --md-sys-color-on-secondary-container: #1d192b;
-}
-
-.dark body {
-  --theme-bg: var(--dracula-background);
-  --theme-text: var(--dracula-foreground);
-  --theme-primary: var(--dracula-purple);
-  --theme-primary-text: var(--dracula-background);
-  --theme-secondary: var(--dracula-pink);
-  --theme-card-bg: rgba(68, 71, 90, 0.3);
-  --theme-outline: rgba(98, 114, 164, 0.5);
-  --theme-chart-line: var(--dracula-pink);
-  --theme-chart-grid: var(--dracula-current-line);
-  --theme-surface-solid: var(--theme-surface-solid-dark);
-
-  background-color: var(--theme-bg);
-  color: var(--theme-text);
-
-  --md-sys-color-primary: var(--theme-primary);
-  --md-sys-color-on-primary: var(--theme-primary-text);
-  --md-sys-color-surface: var(--theme-card-bg);
-  --md-sys-color-on-surface: var(--theme-text);
-  --md-sys-color-outline: var(--theme-outline);
-  --md-sys-color-surface-container-low: var(--theme-card-bg);
-  --md-sys-color-surface-container: var(--theme-card-bg);
-  --md-sys-color-on-surface-variant: var(--dracula-comment);
-  --md-sys-color-secondary-container: var(--dracula-background);
-  --md-sys-color-on-secondary-container: var(--dracula-purple);
+  --md-sys-color-on-surface-variant: var(--beige);
+  --md-sys-color-secondary-container: rgba(207, 148, 33, 0.2);
+  --md-sys-color-on-secondary-container: var(--gold);
 }
 
 md-menu,
