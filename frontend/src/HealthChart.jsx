@@ -194,7 +194,7 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
 
   return (
     <>
-      <div className="w-full h-[32rem] p-2 flex flex-col">
+      <div className="w-full h-full p-2 flex flex-col">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-4 gap-4">
           <div className="w-64 justify-self-start">
             <md-outlined-select value={selectedMetric} onchange={handleMetricChange}>

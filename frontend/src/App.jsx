@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeContext } from "./ThemeContext.jsx";
 import { AnimatePresence, motion } from 'framer-motion';
@@ -12,6 +12,7 @@ import UserProfile from "./UserProfile";
 import Settings from "./Settings";
 import Assistant from "./Assistant";
 import TestPage from "./TestPage.jsx";
+import StatusMessage from "./StatusMessage.jsx"; // Import StatusMessage
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -24,8 +25,14 @@ const PageWrapper = ({ children }) => (
   </motion.div>
 );
 
-const AnimatedRoutes = () => {
+const AnimatedRoutes = ({ setNotificationMessage }) => {
     const location = useLocation();
+
+    // Use useEffect to dismiss notification on route change
+    useEffect(() => {
+        setNotificationMessage(null);
+    }, [location.pathname, setNotificationMessage]);
+
     return (
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
@@ -41,32 +48,37 @@ const AnimatedRoutes = () => {
             </Routes>
         </AnimatePresence>
     );
-}
+};
 
 function App() {
-  const { backgroundImage } = useContext(ThemeContext);
+    const { backgroundImage } = useContext(ThemeContext);
+    const [notificationMessage, setNotificationMessage] = useState(null);
 
-  const mainBgStyle = backgroundImage ? {
-    backgroundImage: `url(${backgroundImage})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundAttachment: 'fixed',
-  } : {};
+    const mainBgStyle = backgroundImage ? {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+    } : {};
 
-  const overlayClass = backgroundImage ? 'bg-gray-800/80' : '';
+    const overlayClass = backgroundImage ? 'bg-gray-800/80' : '';
 
-  return (
-    <div
-      className={`min-h-screen transition-colors duration-300`}
-      style={mainBgStyle}
-    >
-      <div className={`relative z-10 ${overlayClass}`}>
-        <Router>
-          <AnimatedRoutes />
-        </Router>
-      </div>
-    </div>
-  );
+    return (
+        <div
+            className={`min-h-screen transition-colors duration-300`}
+            style={mainBgStyle}
+        >
+            <div className={`relative z-10 ${overlayClass}`}>
+                <Router>
+                    <StatusMessage
+                        message={notificationMessage}
+                        onDismiss={() => setNotificationMessage(null)}
+                    />
+                    <AnimatedRoutes setNotificationMessage={setNotificationMessage} />
+                </Router>
+            </div>
+        </div>
+    );
 }
 
 export default App;

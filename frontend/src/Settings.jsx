@@ -86,7 +86,6 @@ const Settings = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
                 <main className="container mx-auto px-6 pt-4 pb-6 flex-1 flex flex-col min-h-0">
                     <div className="relative bg-[var(--theme-card-bg)] p-6 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1 flex flex-col min-h-0">
-                        <StatusMessage message={statusMessage} onDismiss={() => setStatusMessage("")} />
                         <div ref={scrollRef} className={`flex-1 overflow-y-auto ${isOverflowing ? 'pr-4' : ''}`}>
                             <h2 className="text-3xl font-bold mb-6 text-center text-[var(--theme-text)]">Settings</h2>
                             
