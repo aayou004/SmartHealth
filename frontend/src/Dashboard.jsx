@@ -11,6 +11,7 @@ import "@material/web/icon/icon.js";
 import "@material/web/iconbutton/icon-button.js";
 import "@material/web/tabs/tabs.js";
 import "@material/web/tabs/primary-tab.js";
+import Gamification from "./Gamification"; // Assuming you have a Gamification.jsx file as discussed
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const Dashboard = () => {
   const [logs, setLogs] = useState([]);
   const [daysToShow, setDaysToShow] = useState(30);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
-  
+
   // Memoize user to prevent re-renders
   const user = useMemo(() => {
     const userData = localStorage.getItem("user");
@@ -41,6 +42,22 @@ const Dashboard = () => {
       console.error("Failed to fetch logs:", error);
     }
   }, [user?.user_id]);
+
+  // Use this memoized hook to calculate personal bests
+  const personalBests = useMemo(() => {
+    if (logs.length === 0) return {};
+
+    const steps = logs.map(l => l.steps).filter(s => s !== null && s !== undefined);
+    const weights = logs.map(l => l.weight).filter(w => w !== null && w !== undefined);
+
+    const highestSteps = steps.length > 0 ? Math.max(...steps) : null;
+    const lowestWeight = weights.length > 0 ? Math.min(...weights) : null;
+
+    return {
+      highestSteps,
+      lowestWeight,
+    };
+  }, [logs]);
 
   const summary = useMemo(() => {
     if (logs.length === 0) return {
@@ -74,21 +91,71 @@ const Dashboard = () => {
     };
   }, [logs, daysToShow]);
 
-  // Memoize summary cards to prevent recreation on every render
+  // Memoize summary cards and add PB data
   const summaryCards = useMemo(() => [
-    { title: "Avg. Steps", value: summary.avg_steps },
-    { title: "Avg. Sleep", value: summary.avg_sleep === 'N/A' ? 'N/A' : `${summary.avg_sleep} hrs` },
-    { title: "Avg. Heart Rate", value: summary.avg_heart_rate === 'N/A' ? 'N/A' : `${summary.avg_heart_rate} bpm` },
-    { title: "Avg. Workout Intensity", value: summary.avg_workout_intensity === 'N/A' ? 'N/A' : `${summary.avg_workout_intensity} / 5` },
-    { title: "Avg. Weight", value: summary.avg_weight === 'N/A' ? 'N/A' : `${summary.avg_weight} kg` },
-    { title: "Avg. Water", value: summary.avg_water_glasses === 'N/A' ? 'N/A' : `${summary.avg_water_glasses} glasses` },
-    { title: "Avg. Calories", value: summary.avg_calories === 'N/A' ? 'N/A' : `${summary.avg_calories} kcal` },
-    { title: "Avg. Protein / Carbs / Fat", value: `${summary.avg_protein === 'N/A' ? 'N/A' : summary.avg_protein + ' g'} / ${summary.avg_carbs === 'N/A' ? 'N/A' : summary.avg_carbs + ' g'} / ${summary.avg_fat === 'N/A' ? 'N/A' : summary.avg_fat + ' g'}` },
-    { title: "Avg. Active Mins", value: summary.avg_active_minutes === 'N/A' ? 'N/A' : `${summary.avg_active_minutes} min` },
-    { title: "Avg. Mindful Mins", value: summary.avg_mindful_minutes === 'N/A' ? 'N/A' : `${summary.avg_mindful_minutes} min` },
-    { title: "Avg. Mood", value: summary.avg_mood === 'N/A' ? 'N/A' : `${summary.avg_mood} / 5` },
-    { title: "Avg. Stress", value: summary.avg_stress_level === 'N/A' ? 'N/A' : `${summary.avg_stress_level} / 5` },
-  ], [summary]);
+    { 
+      title: "Avg. Steps", 
+      value: summary.avg_steps, 
+      isPersonalBest: logs.length > 0 && personalBests.highestSteps !== null && Number(summary.avg_steps) === personalBests.highestSteps,
+      unit: "steps",
+    },
+    { 
+      title: "Avg. Sleep", 
+      value: summary.avg_sleep, 
+      unit: "hrs",
+    },
+    { 
+      title: "Avg. Heart Rate", 
+      value: summary.avg_heart_rate, 
+      unit: "bpm",
+    },
+    { 
+      title: "Avg. Workout Intensity", 
+      value: summary.avg_workout_intensity, 
+      unit: "/ 5",
+    },
+    { 
+      title: "Avg. Weight", 
+      value: summary.avg_weight, 
+      isPersonalBest: logs.length > 0 && personalBests.lowestWeight !== null && Number(summary.avg_weight) === personalBests.lowestWeight,
+      unit: "kg",
+    },
+    { 
+      title: "Avg. Water", 
+      value: summary.avg_water_glasses, 
+      unit: "glasses",
+    },
+    { 
+      title: "Avg. Calories", 
+      value: summary.avg_calories, 
+      unit: "kcal",
+    },
+    { 
+      title: "Avg. Protein / Carbs / Fat", 
+      value: `${summary.avg_protein === 'N/A' ? 'N/A' : summary.avg_protein} / ${summary.avg_carbs === 'N/A' ? 'N/A' : summary.avg_carbs} / ${summary.avg_fat === 'N/A' ? 'N/A' : summary.avg_fat}`,
+      unit: "g",
+    },
+    { 
+      title: "Avg. Active Mins", 
+      value: summary.avg_active_minutes, 
+      unit: "min",
+    },
+    { 
+      title: "Avg. Mindful Mins", 
+      value: summary.avg_mindful_minutes, 
+      unit: "min",
+    },
+    { 
+      title: "Avg. Mood", 
+      value: summary.avg_mood, 
+      unit: "/ 5",
+    },
+    { 
+      title: "Avg. Stress", 
+      value: summary.avg_stress_level, 
+      unit: "/ 5",
+    },
+  ], [summary, personalBests, logs]);
 
   // Memoize the cardBgClass to prevent recalculation
   const cardBgClass = useMemo(() => 
@@ -107,7 +174,7 @@ const Dashboard = () => {
     setActiveCardIndex(index);
   }, []);
 
-  // Memoize dot click handler  
+  // Memoize dot click handler  
   const handleDotClick = useCallback((index) => {
     setActiveCardIndex(index);
   }, []);
@@ -134,8 +201,13 @@ const Dashboard = () => {
 
                   return (
                     <div key={index} onClick={() => handleCardClick(index)} className={classes}>
-                      <h3 className="font-bold mb-2 text-[var(--theme-text)]">{card.title}</h3>
-                      <p className="text-xl font-semibold text-[var(--theme-primary)]">{card.value}</p>
+                      <div className="flex items-center gap-2">
+                          <h3 className="font-bold mb-2 text-[var(--theme-text)]">{card.title}</h3>
+                          {card.isPersonalBest && (
+                              <md-icon style={{ color: card.title === "Avg. Weight" ? "#22C55E" : "#F59E0B" }}>star</md-icon>
+                          )}
+                      </div>
+                      <p className="text-xl font-semibold text-[var(--theme-primary)]">{card.value === 'N/A' ? 'N/A' : `${card.value}${card.unit ? ' ' + card.unit : ''}`}</p>
                     </div>
                   );
                 })}
