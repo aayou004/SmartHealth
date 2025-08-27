@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useContext } from "react";
+import React, { useState, useEffect, useMemo, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import HealthChart from "./HealthChart";
@@ -14,31 +14,36 @@ import "@material/web/tabs/primary-tab.js";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { mode, setMode, theme, setTheme } = useContext(ThemeContext); 
+  const { mode } = useContext(ThemeContext);
   const [logs, setLogs] = useState([]);
   const [daysToShow, setDaysToShow] = useState(30);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
-  const user = JSON.parse(localStorage.getItem("user"));
+  
+  // Memoize user to prevent re-renders
+  const user = useMemo(() => {
+    const userData = localStorage.getItem("user");
+    return userData ? JSON.parse(userData) : null;
+  }, []);
 
   useEffect(() => {
-    if (!user || !user.user_id) {
+    if (!user?.user_id) {
       navigate("/");
       return;
     }
     fetchData();
   }, [user, navigate]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/logs/${user.user_id}`);
       setLogs(res.data);
     } catch (error) {
       console.error("Failed to fetch logs:", error);
     }
-  };
+  }, [user?.user_id]);
 
   const summary = useMemo(() => {
-    if (logs.length === 0) return { 
+    if (logs.length === 0) return {
       avg_steps: 'N/A', avg_sleep: 'N/A', avg_calories: 'N/A', avg_active_minutes: 'N/A',
       avg_water_glasses: 'N/A', avg_protein: 'N/A', avg_carbs: 'N/A', avg_fat: 'N/A',
       avg_mood: 'N/A', avg_stress_level: 'N/A', avg_mindful_minutes: 'N/A', avg_weight: 'N/A',
@@ -46,11 +51,11 @@ const Dashboard = () => {
     };
     const recentLogs = logs.slice(-daysToShow);
     const calcAverage = (field, precision = 0) => {
-      const filteredLogs = recentLogs.filter(log => log[field] != null);
-      if (filteredLogs.length === 0) return 'N/A';
-      const total = filteredLogs.reduce((sum, log) => sum + log[field], 0);
-      return (total / filteredLogs.length).toFixed(precision);
-    }
+      const filtered = recentLogs.filter(l => l[field] != null);
+      if (!filtered.length) return 'N/A';
+      const total = filtered.reduce((sum, l) => sum + l[field], 0);
+      return (total / filtered.length).toFixed(precision);
+    };
     return {
       avg_steps: calcAverage('steps'),
       avg_sleep: calcAverage('sleep_hours', 1),
@@ -69,7 +74,8 @@ const Dashboard = () => {
     };
   }, [logs, daysToShow]);
 
-  const summaryCards = [
+  // Memoize summary cards to prevent recreation on every render
+  const summaryCards = useMemo(() => [
     { title: "Avg. Steps", value: summary.avg_steps },
     { title: "Avg. Sleep", value: summary.avg_sleep === 'N/A' ? 'N/A' : `${summary.avg_sleep} hrs` },
     { title: "Avg. Heart Rate", value: summary.avg_heart_rate === 'N/A' ? 'N/A' : `${summary.avg_heart_rate} bpm` },
@@ -82,24 +88,29 @@ const Dashboard = () => {
     { title: "Avg. Mindful Mins", value: summary.avg_mindful_minutes === 'N/A' ? 'N/A' : `${summary.avg_mindful_minutes} min` },
     { title: "Avg. Mood", value: summary.avg_mood === 'N/A' ? 'N/A' : `${summary.avg_mood} / 5` },
     { title: "Avg. Stress", value: summary.avg_stress_level === 'N/A' ? 'N/A' : `${summary.avg_stress_level} / 5` },
-  ];
+  ], [summary]);
 
-  const cardBgClass = mode === 'custom' ? 'bg-[var(--theme-card-bg-alpha)]' : 'bg-[var(--theme-card-bg)]';
+  // Memoize the cardBgClass to prevent recalculation
+  const cardBgClass = useMemo(() => 
+    mode === 'custom' ? 'bg-[var(--theme-card-bg-alpha)]' : 'bg-[var(--theme-card-bg)]', 
+    [mode]
+  );
 
-  const handleScroll = (direction) => {
+  // Memoize scroll handler to prevent recreation
+  const handleScroll = useCallback((direction) => {
     const numCards = summaryCards.length;
-    let newIndex = activeCardIndex;
-    if (direction === "left") {
-      newIndex = (activeCardIndex - 1 + numCards) % numCards;
-    } else {
-      newIndex = (activeCardIndex + 1) % numCards;
-    }
-    setActiveCardIndex(newIndex);
-  };
+    setActiveCardIndex(prev => direction === 'left' ? (prev - 1 + numCards) % numCards : (prev + 1) % numCards);
+  }, [summaryCards.length]);
 
-  const scrollToCard = (index) => {
+  // Memoize card click handler
+  const handleCardClick = useCallback((index) => {
     setActiveCardIndex(index);
-  };
+  }, []);
+
+  // Memoize dot click handler  
+  const handleDotClick = useCallback((index) => {
+    setActiveCardIndex(index);
+  }, []);
 
   return (
     <div className="flex h-screen bg-transparent">
@@ -122,7 +133,7 @@ const Dashboard = () => {
                   else classes += " scale-75 opacity-0 z-0 hidden";
 
                   return (
-                    <div key={index} onClick={() => scrollToCard(index)} className={classes}>
+                    <div key={index} onClick={() => handleCardClick(index)} className={classes}>
                       <h3 className="font-bold mb-2 text-[var(--theme-text)]">{card.title}</h3>
                       <p className="text-xl font-semibold text-[var(--theme-primary)]">{card.value}</p>
                     </div>
@@ -147,10 +158,8 @@ const Dashboard = () => {
                 {summaryCards.map((_, index) => (
                   <button
                     key={index}
-                    onClick={() => scrollToCard(index)}
-                    className={`w-3 h-3 mx-1 rounded-full border-2 ${
-                      index === activeCardIndex ? "border-[var(--theme-primary)] bg-transparent" : "bg-[var(--theme-primary)] border-transparent"
-                    }`}
+                    onClick={() => handleDotClick(index)}
+                    className={`w-3 h-3 mx-1 rounded-full border-2 ${index === activeCardIndex ? "border-[var(--theme-primary)] bg-transparent" : "bg-[var(--theme-primary)] border-transparent"}`}
                   />
                 ))}
               </div>
@@ -158,7 +167,7 @@ const Dashboard = () => {
 
             {/* Chart */}
             <div className={`${cardBgClass} p-4 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg flex-1`}>
-              <HealthChart data={logs} daysToShow={daysToShow} setDaysToShow={setDaysToShow} />
+              <HealthChartMemo data={logs} daysToShow={daysToShow} setDaysToShow={setDaysToShow} />
             </div>
 
           </div>
@@ -167,5 +176,14 @@ const Dashboard = () => {
     </div>
   );
 };
+
+// Wrap HealthChart in React.memo with custom comparison function to prevent unnecessary re-renders
+const HealthChartMemo = React.memo(HealthChart, (prevProps, nextProps) => {
+  return (
+    prevProps.data === nextProps.data &&
+    prevProps.daysToShow === nextProps.daysToShow &&
+    prevProps.setDaysToShow === nextProps.setDaysToShow
+  );
+});
 
 export default Dashboard;

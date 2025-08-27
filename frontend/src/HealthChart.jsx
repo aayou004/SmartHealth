@@ -25,7 +25,8 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
   const fullscreenSliderRef = useRef(null);
   const fullscreenChartRef = useRef(null);
 
-  const chartColors = {
+  // Memoize chart colors to prevent recreation on every render
+  const chartColors = useMemo(() => ({
     tick: '#EEECE3',
     grid: 'rgba(238, 236, 227, 0.2)',
     line: '#CF9421',
@@ -34,46 +35,10 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
     protein: '#8884d8',
     carbs: '#82ca9d',
     fat: '#ffc658'
-  };
+  }), []);
 
-  const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(prev => !prev);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        toggleFullscreen();
-      }
-    };
-
-    if (isFullscreen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isFullscreen, toggleFullscreen]);
-
-  useEffect(() => {
-    const sliders = [sliderRef.current, fullscreenSliderRef.current];
-    sliders.forEach(slider => {
-      if (slider) {
-        const min = parseInt(slider.min, 10);
-        const max = parseInt(slider.max, 10);
-        const val = parseInt(slider.value, 10);
-        const percentage = max === min ? 0 : ((val - min) * 100) / (max - min);
-        slider.style.setProperty('--slider-percentage', `${percentage}%`);
-      }
-    });
-  }, [daysToShow, data, isFullscreen]);
-
-  const filteredData = useMemo(() => {
-    return data.slice(-daysToShow);
-  }, [data, daysToShow]);
-
-  const metricOptions = [
+  // Memoize metric options to prevent recreation
+  const metricOptions = useMemo(() => [
     { value: "steps", label: "Steps" },
     { value: "sleep_hours", label: "Sleep" },
     { value: "heart_rate", label: "Heart Rate" },
@@ -86,20 +51,60 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
     { value: "mindful_minutes", label: "Mindful Mins" },
     { value: "mood", label: "Mood" },
     { value: "stress_level", label: "Stress" },
-  ];
+  ], []);
 
-  const chartTitle = metricOptions.find(opt => opt.value === selectedMetric)?.label + " Over Time";
-  const selectedMetricLabel = metricOptions.find(opt => opt.value === selectedMetric)?.label;
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
 
-  const formatDate = (tickItem) => {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    const sliders = [sliderRef.current, fullscreenSliderRef.current].filter(Boolean);
+    sliders.forEach(slider => {
+      const min = parseInt(slider.min, 10);
+      const max = parseInt(slider.max, 10);
+      const val = parseInt(slider.value, 10);
+      const percentage = max === min ? 0 : ((val - min) * 100) / (max - min);
+      slider.style.setProperty('--slider-percentage', `${percentage}%`);
+    });
+  }, [daysToShow, data.length]);
+
+  // Memoize filtered data to prevent recalculation on every render
+  const filteredData = useMemo(() => {
+    return data.slice(-daysToShow);
+  }, [data, daysToShow]);
+
+  // Memoize chart title and label calculations
+  const chartTitle = useMemo(() => {
+    const option = metricOptions.find(opt => opt.value === selectedMetric);
+    return (option?.label || 'Unknown') + " Over Time";
+  }, [selectedMetric, metricOptions]);
+
+  const selectedMetricLabel = useMemo(() => {
+    const option = metricOptions.find(opt => opt.value === selectedMetric);
+    return option?.label || 'Unknown';
+  }, [selectedMetric, metricOptions]);
+
+  // Memoize date formatter
+  const formatDate = useCallback((tickItem) => {
     const [year, month, day] = tickItem.split('-');
     return `${month}/${day}`;
-  };
+  }, []);
 
   const handleDownload = useCallback(() => {
-    if (fullscreenChartRef.current === null) {
-      return;
-    }
+    if (!fullscreenChartRef.current) return;
 
     htmlToImage.toPng(fullscreenChartRef.current, { cacheBust: true })
       .then((dataUrl) => {
@@ -109,11 +114,22 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
         link.click();
       })
       .catch((err) => {
-        console.log(err);
+        console.error('Failed to download chart:', err);
       });
-  }, [fullscreenChartRef]);
+  }, []);
 
-  const chartContent = (
+  // Memoize metric selection handler
+  const handleMetricChange = useCallback((e) => {
+    setSelectedMetric(e.target.value);
+  }, []);
+
+  // Memoize days change handler
+  const handleDaysChange = useCallback((e) => {
+    setDaysToShow(Number(e.target.value));
+  }, [setDaysToShow]);
+
+  // Memoize chart content to prevent unnecessary re-renders
+  const chartContent = useMemo(() => (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={filteredData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
         <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
@@ -145,21 +161,43 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
         )}
       </LineChart>
     </ResponsiveContainer>
-  );
+  ), [filteredData, selectedMetric, selectedMetricLabel, chartColors, formatDate]);
 
-  const LegendItem = ({ color, name }) => (
+  // Memoize legend item component
+  const LegendItem = useCallback(({ color, name }) => (
     <span style={{ color: color, marginLeft: '15px', display: 'inline-flex', alignItems: 'center' }}>
-      <span style={{ display: 'inline-block', marginRight: '5px', width: '10px', height: '10px', backgroundColor: color, borderRadius: '2px' }}></span>
+      <span style={{ 
+        display: 'inline-block', 
+        marginRight: '5px', 
+        width: '10px', 
+        height: '10px', 
+        backgroundColor: color, 
+        borderRadius: '2px' 
+      }}></span>
       {name}
     </span>
-  );
+  ), []);
+
+  // Memoize legend content
+  const legendContent = useMemo(() => {
+    if (selectedMetric === 'macros') {
+      return (
+        <>
+          <LegendItem color={chartColors.protein} name="Protein (g)" />
+          <LegendItem color={chartColors.carbs} name="Carbs (g)" />
+          <LegendItem color={chartColors.fat} name="Fat (g)" />
+        </>
+      );
+    }
+    return <LegendItem color={chartColors.line} name={selectedMetricLabel} />;
+  }, [selectedMetric, selectedMetricLabel, chartColors, LegendItem]);
 
   return (
     <>
       <div className="w-full h-[32rem] p-2 flex flex-col">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-4 gap-4">
           <div className="w-64 justify-self-start">
-            <md-outlined-select value={selectedMetric} onchange={(e) => setSelectedMetric(e.target.value)}>
+            <md-outlined-select value={selectedMetric} onchange={handleMetricChange}>
               {metricOptions.map(option => (
                 <md-select-option key={option.value} value={option.value}>{option.label}</md-select-option>
               ))}
@@ -189,21 +227,13 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
                     min="7"
                     max={data.length > 7 ? data.length : 7}
                     value={daysToShow}
-                    onChange={(e) => setDaysToShow(Number(e.target.value))}
+                    onChange={handleDaysChange}
                     className="w-full themed-slider"
                 />
                 <span className="text-sm font-semibold text-[var(--theme-text)] w-10 text-right pb-0.5">{daysToShow}d</span>
             </div>
             <div className="text-sm font-semibold text-[var(--theme-text)]">
-              {selectedMetric === 'macros' ? (
-                <>
-                  <LegendItem color={chartColors.protein} name="Protein (g)" />
-                  <LegendItem color={chartColors.carbs} name="Carbs (g)" />
-                  <LegendItem color={chartColors.fat} name="Fat (g)" />
-                </>
-              ) : (
-                <LegendItem color={chartColors.line} name={selectedMetricLabel} />
-              )}
+              {legendContent}
             </div>
         </div>
       </div>
@@ -229,7 +259,7 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
                 <div className="w-full h-full flex flex-col">
                   <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-4 gap-4">
                     <div className="w-64 justify-self-start">
-                      <md-outlined-select value={selectedMetric} onchange={(e) => setSelectedMetric(e.target.value)}>
+                      <md-outlined-select value={selectedMetric} onchange={handleMetricChange}>
                         {metricOptions.map(option => (
                           <md-select-option key={option.value} value={option.value}>{option.label}</md-select-option>
                         ))}
@@ -256,21 +286,13 @@ const HealthChart = ({ data, daysToShow, setDaysToShow }) => {
                               min="7"
                               max={data.length > 7 ? data.length : 7}
                               value={daysToShow}
-                              onChange={(e) => setDaysToShow(Number(e.target.value))}
+                              onChange={handleDaysChange}
                               className="w-full themed-slider"
                           />
                           <span className="text-sm font-semibold text-[var(--theme-text)] w-10 text-right pb-0.5">{daysToShow}d</span>
                       </div>
                       <div className="text-sm font-semibold text-[var(--theme-text)]">
-                        {selectedMetric === 'macros' ? (
-                          <>
-                            <LegendItem color={chartColors.protein} name="Protein (g)" />
-                            <LegendItem color={chartColors.carbs} name="Carbs (g)" />
-                            <LegendItem color={chartColors.fat} name="Fat (g)" />
-                          </>
-                        ) : (
-                          <LegendItem color={chartColors.line} name={selectedMetricLabel} />
-                        )}
+                        {legendContent}
                       </div>
                   </div>
                 </div>
