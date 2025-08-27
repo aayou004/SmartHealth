@@ -11,7 +11,7 @@ import "@material/web/icon/icon.js";
 import "@material/web/iconbutton/icon-button.js";
 import "@material/web/tabs/tabs.js";
 import "@material/web/tabs/primary-tab.js";
-import Gamification from "./Gamification"; // Assuming you have a Gamification.jsx file as discussed
+import Gamification from "./Gamification";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -20,7 +20,6 @@ const Dashboard = () => {
   const [daysToShow, setDaysToShow] = useState(30);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
 
-  // Memoize user to prevent re-renders
   const user = useMemo(() => {
     const userData = localStorage.getItem("user");
     return userData ? JSON.parse(userData) : null;
@@ -43,29 +42,18 @@ const Dashboard = () => {
     }
   }, [user?.user_id]);
 
-  // Use this memoized hook to calculate personal bests
   const personalBests = useMemo(() => {
     if (logs.length === 0) return {};
-
-    const steps = logs.map(l => l.steps).filter(s => s !== null && s !== undefined);
-    const weights = logs.map(l => l.weight).filter(w => w !== null && w !== undefined);
-
-    const highestSteps = steps.length > 0 ? Math.max(...steps) : null;
-    const lowestWeight = weights.length > 0 ? Math.min(...weights) : null;
-
+    const steps = logs.map(l => l.steps).filter(s => s != null);
+    const weights = logs.map(l => l.weight).filter(w => w != null);
     return {
-      highestSteps,
-      lowestWeight,
+      highestSteps: steps.length ? Math.max(...steps) : null,
+      lowestWeight: weights.length ? Math.min(...weights) : null,
     };
   }, [logs]);
 
   const summary = useMemo(() => {
-    if (logs.length === 0) return {
-      avg_steps: 'N/A', avg_sleep: 'N/A', avg_calories: 'N/A', avg_active_minutes: 'N/A',
-      avg_water_glasses: 'N/A', avg_protein: 'N/A', avg_carbs: 'N/A', avg_fat: 'N/A',
-      avg_mood: 'N/A', avg_stress_level: 'N/A', avg_mindful_minutes: 'N/A', avg_weight: 'N/A',
-      avg_heart_rate: 'N/A', avg_workout_intensity: 'N/A'
-    };
+    if (!logs.length) return { avg_steps: 'N/A', avg_sleep: 'N/A', avg_weight: 'N/A' };
     const recentLogs = logs.slice(-daysToShow);
     const calcAverage = (field, precision = 0) => {
       const filtered = recentLogs.filter(l => l[field] != null);
@@ -76,27 +64,15 @@ const Dashboard = () => {
     return {
       avg_steps: calcAverage('steps'),
       avg_sleep: calcAverage('sleep_hours', 1),
-      avg_calories: calcAverage('calorie_intake'),
-      avg_active_minutes: calcAverage('active_minutes'),
-      avg_water_glasses: calcAverage('water_glasses'),
-      avg_protein: calcAverage('protein', 1),
-      avg_carbs: calcAverage('carbs', 1),
-      avg_fat: calcAverage('fat', 1),
-      avg_mood: calcAverage('mood', 1),
-      avg_stress_level: calcAverage('stress_level', 1),
-      avg_mindful_minutes: calcAverage('mindful_minutes'),
       avg_weight: calcAverage('weight', 1),
-      avg_heart_rate: calcAverage('heart_rate'),
-      avg_workout_intensity: calcAverage('workout_intensity', 1),
     };
   }, [logs, daysToShow]);
 
-  // Memoize summary cards and add PB data
   const summaryCards = useMemo(() => [
     { 
       title: "Avg. Steps", 
       value: summary.avg_steps, 
-      isPersonalBest: logs.length > 0 && personalBests.highestSteps !== null && Number(summary.avg_steps) === personalBests.highestSteps,
+      isPersonalBest: logs.length && personalBests.highestSteps !== null && Number(summary.avg_steps) === personalBests.highestSteps,
       unit: "steps",
     },
     { 
@@ -105,79 +81,22 @@ const Dashboard = () => {
       unit: "hrs",
     },
     { 
-      title: "Avg. Heart Rate", 
-      value: summary.avg_heart_rate, 
-      unit: "bpm",
-    },
-    { 
-      title: "Avg. Workout Intensity", 
-      value: summary.avg_workout_intensity, 
-      unit: "/ 5",
-    },
-    { 
       title: "Avg. Weight", 
       value: summary.avg_weight, 
-      isPersonalBest: logs.length > 0 && personalBests.lowestWeight !== null && Number(summary.avg_weight) === personalBests.lowestWeight,
+      isPersonalBest: logs.length && personalBests.lowestWeight !== null && Number(summary.avg_weight) === personalBests.lowestWeight,
       unit: "kg",
-    },
-    { 
-      title: "Avg. Water", 
-      value: summary.avg_water_glasses, 
-      unit: "glasses",
-    },
-    { 
-      title: "Avg. Calories", 
-      value: summary.avg_calories, 
-      unit: "kcal",
-    },
-    { 
-      title: "Avg. Protein / Carbs / Fat", 
-      value: `${summary.avg_protein === 'N/A' ? 'N/A' : summary.avg_protein} / ${summary.avg_carbs === 'N/A' ? 'N/A' : summary.avg_carbs} / ${summary.avg_fat === 'N/A' ? 'N/A' : summary.avg_fat}`,
-      unit: "g",
-    },
-    { 
-      title: "Avg. Active Mins", 
-      value: summary.avg_active_minutes, 
-      unit: "min",
-    },
-    { 
-      title: "Avg. Mindful Mins", 
-      value: summary.avg_mindful_minutes, 
-      unit: "min",
-    },
-    { 
-      title: "Avg. Mood", 
-      value: summary.avg_mood, 
-      unit: "/ 5",
-    },
-    { 
-      title: "Avg. Stress", 
-      value: summary.avg_stress_level, 
-      unit: "/ 5",
     },
   ], [summary, personalBests, logs]);
 
-  // Memoize the cardBgClass to prevent recalculation
-  const cardBgClass = useMemo(() => 
-    mode === 'custom' ? 'bg-[var(--theme-card-bg-alpha)]' : 'bg-[var(--theme-card-bg)]', 
-    [mode]
-  );
+  const cardBgClass = useMemo(() => mode === 'custom' ? 'bg-[var(--theme-card-bg-alpha)]' : 'bg-[var(--theme-card-bg)]', [mode]);
 
-  // Memoize scroll handler to prevent recreation
   const handleScroll = useCallback((direction) => {
     const numCards = summaryCards.length;
     setActiveCardIndex(prev => direction === 'left' ? (prev - 1 + numCards) % numCards : (prev + 1) % numCards);
   }, [summaryCards.length]);
 
-  // Memoize card click handler
-  const handleCardClick = useCallback((index) => {
-    setActiveCardIndex(index);
-  }, []);
-
-  // Memoize dot click handler  
-  const handleDotClick = useCallback((index) => {
-    setActiveCardIndex(index);
-  }, []);
+  const handleCardClick = useCallback((index) => setActiveCardIndex(index), []);
+  const handleDotClick = useCallback((index) => setActiveCardIndex(index), []);
 
   return (
     <div className="flex h-screen bg-transparent">
@@ -194,7 +113,6 @@ const Dashboard = () => {
                   const rightIndex = (activeCardIndex + 1) % summaryCards.length;
 
                   let classes = "transition-all duration-500 cursor-pointer flex flex-col items-center justify-center p-4 rounded-xl border border-[var(--theme-outline)] backdrop-blur-lg";
-
                   if (index === activeCardIndex) classes += " scale-100 opacity-100 z-20 min-w-[200px] max-w-[220px]";
                   else if (index === leftIndex || index === rightIndex) classes += " scale-90 opacity-70 z-10 min-w-[160px] max-w-[180px]";
                   else classes += " scale-75 opacity-0 z-0 hidden";
@@ -249,7 +167,6 @@ const Dashboard = () => {
   );
 };
 
-// Wrap HealthChart in React.memo with custom comparison function to prevent unnecessary re-renders
 const HealthChartMemo = React.memo(HealthChart, (prevProps, nextProps) => {
   return (
     prevProps.data === nextProps.data &&
