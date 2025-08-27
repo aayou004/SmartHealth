@@ -111,3 +111,12 @@ md-outlined-select::part(menu) {
 .chat-message strong {
   font-weight: 600;
 }
+
+/* Hide horizontal scrollbar for carousel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}

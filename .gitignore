@@ -31,3 +31,4 @@ yarn-error.log*
 /backend/uploads
 /backend/scripts
 /backend/.env
+/backend/ml_models
